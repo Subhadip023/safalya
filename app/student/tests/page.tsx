@@ -12,6 +12,9 @@ export type AvailableTest = {
     valid_until: string;
     duration_seconds: number;
     question_count: number;
+    total_marks?: number;
+    has_negative_marks?: boolean;
+    max_negative_mark?: number;
     topics?: string[];
     access_type?: string;
     is_private?: boolean;

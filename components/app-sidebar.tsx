@@ -15,11 +15,13 @@ import {
   GraduationCap,
   Settings,
   Mail,
+  LogOut,
 } from "lucide-react";
 
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -27,8 +29,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-import logoFull from "../public/logos/safalya-logo-new-2.png";
-import logoIcon from "../public/logos/safalya-logo-icon.png";
+import logoFull from "../public/logos/safalya-logo-new-beta.png";
+import logoIcon from "../public/logos/safalya-logo-new-beta-icon.png";
 
 interface AppSidebarProps {
   role: string;
@@ -224,7 +226,24 @@ export function AppSidebar({ role, userName, organizationName }: AppSidebarProps
         </SidebarMenu>
       </SidebarContent>
 
-
+      <SidebarFooter className="border-t border-border p-2">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <form action="/api/auth/logout" method="post" className="w-full">
+              <SidebarMenuButton
+                type="submit"
+                tooltip="Log out"
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-md transition-all duration-200 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                <span className="font-medium group-data-[collapsible=icon]:hidden truncate text-base">
+                  Log out
+                </span>
+                <LogOut className="!h-5 !w-5 shrink-0" />
+              </SidebarMenuButton>
+            </form>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }

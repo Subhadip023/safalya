@@ -796,7 +796,7 @@ function StudentAttemptModal({
                                                                 variant="outline"
                                                                 className="border-destructive/40 bg-destructive/10 text-destructive text-xs"
                                                             >
-                                                                ✗ Incorrect (0)
+                                                                ✗ Incorrect {q.negative_marks && Number(q.negative_marks) > 0 ? `(-${q.negative_marks})` : "(0)"}
                                                             </Badge>
                                                         )}
                                                     </div>
