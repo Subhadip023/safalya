@@ -20,6 +20,8 @@ type AttemptQuestion = {
     position: number;
     question: string;
     marks: string;
+    negative_marks?: string | number | null;
+    marks_awarded?: string | number | null;
     options: AttemptOption[];
     selected_option_id: number | null;
     correct_option_id?: number | null;
@@ -37,6 +39,8 @@ export type Attempt = {
     status: number | string;
     score: string;
     total_marks: string;
+    has_negative_marks?: boolean;
+    max_negative_mark?: number;
     is_score_show?: boolean | number | string;
     is_result_show?: boolean | number | string;
     result_file_key?: string | null;
@@ -667,7 +671,7 @@ export default function AttemptRunner({
                             <CardTitle className="text-2xl">Resume this test</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-3 gap-3">
                                 <div className="rounded-lg border bg-muted/40 p-3 text-center">
                                     <p className="text-xl font-bold">{attempt.questions.length}</p>
                                     <p className="text-xs text-muted-foreground">
@@ -680,7 +684,28 @@ export default function AttemptRunner({
                                     </p>
                                     <p className="text-xs text-muted-foreground">Test duration</p>
                                 </div>
+                                <div className="rounded-lg border bg-muted/40 p-3 text-center">
+                                    <p className="text-xl font-bold">{attempt.total_marks}</p>
+                                    <p className="text-xs text-muted-foreground">Total Marks</p>
+                                </div>
                             </div>
+
+                            {attempt.has_negative_marks ? (
+                                <div className="flex items-center gap-2.5 rounded-lg border border-destructive/30 bg-destructive/10 p-3.5 text-xs text-destructive font-medium">
+                                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                                    <span>
+                                        <strong>Negative Marking Applicable:</strong> Wrong answers will deduct up to{" "}
+                                        <strong>{attempt.max_negative_mark ? `-${attempt.max_negative_mark}` : "negative"}</strong> marks per question. Unattempted questions carry 0 penalty.
+                                    </span>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-700 dark:text-emerald-400 font-medium">
+                                    <Check className="h-4 w-4 shrink-0" />
+                                    <span>
+                                        <strong>No Negative Marking:</strong> Incorrect answers carry 0 negative penalty.
+                                    </span>
+                                </div>
+                            )}
                             <div className="grid gap-3 sm:grid-cols-3 text-sm">
                                 <div className="rounded-lg border bg-muted/40 p-4">
                                     <p className="font-semibold">Fullscreen mode required</p>
