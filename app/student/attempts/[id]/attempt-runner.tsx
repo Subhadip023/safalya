@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { sanitizeHtmlContent } from "@/lib/sanitize";
 import { toast } from "sonner";
-import { AlertTriangle, Check, FileText, LayoutGrid, List, Loader2, RotateCcw, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, FileText, LayoutGrid, List, Loader2, RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -150,7 +150,7 @@ export default function AttemptRunner({
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ selected_option_id: optionId }),
                     keepalive: true,
-                }).catch(() => {});
+                }).catch(() => { });
             }
         };
     }, []);
@@ -162,27 +162,27 @@ export default function AttemptRunner({
             pendingSaveRef.current = null;
 
             setSavingId(attemptQuestionId);
-            
+
             const savePromise = fetch(`/api/backend/student/attempts/${attemptId}/questions/${attemptQuestionId}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ selected_option_id: optionId }),
             })
-            .then(async (res) => {
-                const data = await res.json().catch(() => null);
-                if (!res.ok) throw new Error(typeof data?.detail === "string" ? data.detail : "Unable to save answer.");
-                setAttempt(data as Attempt);
-            })
-            .catch((err) => {
-                toast.error(err instanceof Error ? err.message : "Unable to save answer.");
-                setAttempt(initialAttempt);
-            })
-            .finally(() => {
-                setSavingId((prev) => (prev === attemptQuestionId ? null : prev));
-                if (inFlightSaveRef.current === savePromise) {
-                    inFlightSaveRef.current = null;
-                }
-            });
+                .then(async (res) => {
+                    const data = await res.json().catch(() => null);
+                    if (!res.ok) throw new Error(typeof data?.detail === "string" ? data.detail : "Unable to save answer.");
+                    setAttempt(data as Attempt);
+                })
+                .catch((err) => {
+                    toast.error(err instanceof Error ? err.message : "Unable to save answer.");
+                    setAttempt(initialAttempt);
+                })
+                .finally(() => {
+                    setSavingId((prev) => (prev === attemptQuestionId ? null : prev));
+                    if (inFlightSaveRef.current === savePromise) {
+                        inFlightSaveRef.current = null;
+                    }
+                });
 
             inFlightSaveRef.current = savePromise;
             await savePromise;
@@ -272,13 +272,13 @@ export default function AttemptRunner({
         };
 
         const handleKeyDown = (e: KeyboardEvent) => {
-            const allowedKeys = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Enter"];
+            const allowedKeys = ["ArrowLeft", "ArrowRight", "Enter"];
             if (allowedKeys.includes(e.key)) {
-                if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+                if (e.key === "ArrowLeft") {
                     e.preventDefault();
                     void flushPendingSave();
                     setCurrentQuestionIndex((prev) => Math.max(0, prev - 1));
-                } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+                } else if (e.key === "ArrowRight") {
                     e.preventDefault();
                     void flushPendingSave();
                     setCurrentQuestionIndex((prev) => Math.min(attempt.questions.length - 1, prev + 1));
@@ -351,7 +351,7 @@ export default function AttemptRunner({
     const handleAnswer = useCallback(
         (attemptQuestionId: number, optionId: number | null) => {
             if (readOnly) return;
-            
+
             // Optimistic UI update
             setAttempt((prev) => ({
                 ...prev,
@@ -385,7 +385,7 @@ export default function AttemptRunner({
 
     async function handleSubmit(bypassModal = false, isForce = false) {
         if (readOnly) return;
-        
+
         await flushPendingSave();
 
         if (!bypassModal) {
@@ -450,7 +450,7 @@ export default function AttemptRunner({
             }
             fullscreenSubmitStartedRef.current = false;
             fullscreenWarningTriggeredRef.current = false;
-            
+
             // Brief delay for fullscreen browser transition to settle smoothly
             await new Promise((resolve) => setTimeout(resolve, 400));
 
@@ -500,7 +500,7 @@ export default function AttemptRunner({
                                     />
                                 </div>
                             ) : null}
-                            
+
                         </div>
                         {isSubmittedState && (
                             <div className="flex items-center gap-2 flex-wrap ">
@@ -519,18 +519,18 @@ export default function AttemptRunner({
                                     </Badge>
                                 ) : q.correct_option_id != null && String(q.selected_option_id) === String(q.correct_option_id) ? (
                                     <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                                        Correct
+                                        Correct (+{q.marks})
                                     </Badge>
                                 ) : (
                                     <Badge variant="outline" className="border-destructive/40 bg-destructive/10 text-destructive">
-                                        Incorrect
+                                        Incorrect {q.negative_marks && Number(q.negative_marks) > 0 ? `(-${q.negative_marks})` : "(0)"}
                                     </Badge>
                                 )}
                             </span>
                             
                             </div>
-                            
-                            )}
+
+                        )}
                     </CardTitle>
                 </CardHeader>
 
@@ -542,7 +542,7 @@ export default function AttemptRunner({
                             const isCorrect = q.correct_option_id != null && String(q.correct_option_id) === String(opt.id);
 
                             let containerClasses = "flex items-center gap-3 rounded-lg border px-4 py-3 text-sm transition-colors";
-                            
+
                             if (isSubmittedState) {
                                 containerClasses += " cursor-default";
                                 if (showResult) {
@@ -787,7 +787,7 @@ export default function AttemptRunner({
                                     Continue test
                                 </Button>
                                 <Button className="flex-1" onClick={() => handleSubmit(true, false)} disabled={submitting}>
-                                    {submitting ? "Submitting…" : "Submit test"}
+                                    {submitting ? "Submitting…" : "Finish the entire test"}
                                 </Button>
                             </div>
                         </CardContent>
@@ -844,177 +844,216 @@ export default function AttemptRunner({
 
             <div className="mx-auto max-w-6xl space-y-5 pb-24">
 
-            {readOnly && (
-                <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300">
-                    Read-only staff view. Answers and submission cannot be changed.
-                </div>
-            )}
-
-            {tabSwitchCount > 0 && isActive && (
-                <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                    Warning: tab or window switching detected {tabSwitchCount} time{tabSwitchCount === 1 ? "" : "s"}.
-                </div>
-            )}
-
-            {/* ── Sticky header bar ── */}
-                    {isActive && organizationLogo && (
-                <div className="h-12 w-full overflow-hidden  bg-white flex items-center justify-start gap-2">
-                   <img src={`/api/uploads/${organizationLogo.replace(/^uploads\//, "")}`} alt=""  className="h-[80%] "/>
-                   {organizationName && <span className="text-lg font-semibold">{organizationName}</span>}
-                </div>
-            )}
-            <div data-exam-header className="sticky top-16 z-40 flex items-center justify-between gap-4 rounded-xl border bg-background p-4 shadow-sm backdrop-blur">
-                <div className="min-w-0">
-                    <h1 className="truncate text-lg font-bold">{attempt.series_name}</h1>
-                    <div className="mt-1 flex items-center gap-2">
-                        <Badge variant={isActive ? "default" : "secondary"} className="text-xs capitalize">
-                            {statusLabel(attempt.status)}
-                        </Badge>
-                        {!isInProgress(attempt.status) && (
-                            <span className="text-sm font-medium">
-                                {canShowScore(attempt) ? (
-                                    `Score: ${attempt.score} / ${attempt.total_marks}`
-                                ) : (
-                                    <span className="italic text-amber-600 dark:text-amber-400">Score Hidden (Result Not Out)</span>
-                                )}
-                            </span>
-                        )}
-                    </div>
-                </div>
-
-                {isActive && (
-                    <div className="text-right">
-                        <p
-                            className={`font-mono text-2xl font-bold tabular-nums ${remaining < 60 ? "text-destructive animate-pulse" : ""}`}
-                        >
-                            {formatTime(remaining)}
-                        </p>
-                        <p className="text-muted-foreground text-xs">
-                            {answeredCount}/{attempt.questions.length} answered
-                        </p>
+                {readOnly && (
+                    <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300">
+                        Read-only staff view. Answers and submission cannot be changed.
                     </div>
                 )}
-            </div>
 
-            {/* ── Test workspace ── */}
-            {!isActive && !canShowResult(attempt) ? (
-                <Card className="border-amber-500/30 bg-amber-500/5 text-center py-12 px-6 shadow-sm">
-                    <CardContent className="space-y-4">
-                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10">
-                            <AlertTriangle className="h-7 w-7 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <h2 className="text-2xl font-bold text-amber-800 dark:text-amber-300">Results Not Out Yet</h2>
-                        <p className="text-muted-foreground text-sm max-w-md mx-auto leading-relaxed">
-                            Your test attempt has been submitted successfully. The question paper and detailed answer keys are hidden until results are officially published by your administrator.
-                        </p>
-                        {canShowScore(attempt) ? (
-                            <div className="pt-2">
-                                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Your Score</p>
-                                <p className="mt-1 text-3xl font-bold">
-                                    {attempt.score} <span className="text-muted-foreground text-xl">/ {attempt.total_marks}</span>
-                                </p>
-                            </div>
-                        ) : (
-                            <p className="text-xs italic text-amber-600 dark:text-amber-400 font-medium pt-1">
-                                Score Hidden (Result Not Out)
-                            </p>
-                        )}
-                        <div className="pt-4">
-                            <Button 
-                                onClick={() => {
-                                    setIsNavigating(true);
-                                    router.push("/student/tests");
-                                }}
-                                disabled={isNavigating}
-                            >
-                                {isNavigating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {isNavigating ? "Navigating..." : "Return to Available Tests"}
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-            ) : (
-                <div className={effectiveViewMode === "list" ? "space-y-5 w-full" : "grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start"}>
-                    <div className="space-y-5">
-                        {/* ── View Mode Toggle & Questions Header ── */}
-                        <div className="flex items-center justify-between gap-3 pb-1">
-                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                {effectiveViewMode === "list"
-                                    ? `All Questions (${attempt.questions.length})`
-                                    : `Question ${currentQuestionIndex + 1} of ${attempt.questions.length}`}
-                            </span>
-                            {!isActive && (
-                                <div className="flex items-center gap-2">
-                                    {canShowPdf && (
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setIsPdfModalOpen(true)}
-                                            className="h-8 px-3 text-xs gap-1.5 font-medium border-primary/20 hover:bg-primary/5 hover:text-primary cursor-pointer shadow-2xs"
-                                        >
-                                            <FileText className="h-3.5 w-3.5 text-primary" />
-                                            View Answer Key
-                                        </Button>
+                {tabSwitchCount > 0 && isActive && (
+                    <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                        Warning: tab or window switching detected {tabSwitchCount} time{tabSwitchCount === 1 ? "" : "s"}.
+                    </div>
+                )}
+
+                {/* ── Sticky header bar ── */}
+                {isActive && organizationLogo && (
+                    <div className="h-12 w-full overflow-hidden  bg-white flex items-center justify-start gap-2">
+                        <img src={`/api/uploads/${organizationLogo.replace(/^uploads\//, "")}`} alt="" className="h-[80%] " />
+                        {organizationName && <span className="text-lg font-semibold">{organizationName}</span>}
+                    </div>
+                )}
+                {!(!isActive && !canShowResult(attempt))&&<div data-exam-header className="sticky top-16 z-40 flex items-center justify-between gap-4 rounded-xl border bg-background p-4 shadow-sm backdrop-blur">
+                    <div className="min-w-0">
+                        <h1 className="truncate text-lg font-bold">{attempt.series_name}</h1>
+                        <div className="mt-1 flex items-center gap-2">
+                            <Badge variant={isActive ? "default" : "secondary"} className="text-xs capitalize">
+                                {statusLabel(attempt.status)}
+                            </Badge>
+                            {!isInProgress(attempt.status) && (
+                                <span className="text-sm font-medium">
+                                    {canShowScore(attempt) ? (
+                                        `Score: ${attempt.score} / ${attempt.total_marks}`
+                                    ) : (
+                                        <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 font-medium text-xs">
+                                            Result Pending Announcement
+                                        </Badge>
                                     )}
-                                    <div className="flex items-center rounded-lg border bg-muted/40 p-1">
-                                        <Button
-                                            type="button"
-                                            variant={effectiveViewMode === "single" ? "default" : "ghost"}
-                                            size="sm"
-                                            className="h-7 px-2.5 text-xs cursor-pointer"
-                                            onClick={() => {
-                                                void flushPendingSave();
-                                                setUserViewMode("single");
-                                            }}
-                                        >
-                                            <LayoutGrid className="mr-1.5 h-3.5 w-3.5" />
-                                            Single Question
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant={effectiveViewMode === "list" ? "default" : "ghost"}
-                                            size="sm"
-                                            className="h-7 px-2.5 text-xs cursor-pointer"
-                                            onClick={() => {
-                                                void flushPendingSave();
-                                                setUserViewMode("list");
-                                            }}
-                                        >
-                                            <List className="mr-1.5 h-3.5 w-3.5" />
-                                            List View (All)
-                                        </Button>
-                                    </div>
-                                </div>
+                                </span>
                             )}
                         </div>
+                    </div>
 
-                        {/* ── Questions List or Single View ── */}
-                        {effectiveViewMode === "list" ? (
-                            <div className="space-y-5">
-                                {attempt.questions.map((q) => renderQuestionCard(q))}
+                    {isActive && (
+                        <div className="text-right">
+                            <p
+                                className={`font-mono text-2xl font-bold tabular-nums ${remaining < 60 ? "text-destructive animate-pulse" : ""}`}
+                            >
+                                {formatTime(remaining)}
+                            </p>
+                            <p className="text-muted-foreground text-xs">
+                                {answeredCount}/{attempt.questions.length} answered
+                            </p>
+                        </div>
+                    )}
+                </div>}
+
+                {/* ── Test workspace ── */}
+                {!isActive && !canShowResult(attempt) ? (
+                    <Card className="border-primary/20 bg-gradient-to-b from-primary/5 via-background to-background text-center py-12 px-6 shadow-md rounded-2xl">
+                        <CardContent className="space-y-6 max-w-xl mx-auto">
+                            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-8 ring-emerald-500/5">
+                                <CheckCircle2 className="h-10 w-10" />
                             </div>
-                        ) : (
-                            <>
-                                {currentQuestion && renderQuestionCard(currentQuestion)}
+
+                            <div className="space-y-2">
+                                <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3 py-1 font-medium">
+                                    Test Submitted Successfully
+                                </Badge>
+                                <h2 className="text-2xl font-bold tracking-tight sm:text-3xl text-foreground pt-1">
+                                    Thanks for Participating!
+                                </h2>
+                                <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
+                                    Your response for <strong className="text-foreground">{attempt.series_name}</strong> has been safely recorded.
+                                </p>
+                            </div>
+
+                            <div className="rounded-xl border bg-card p-4 space-y-3 text-left text-xs sm:text-sm shadow-xs">
+                                <div className="flex items-center justify-between border-b pb-2.5">
+                                    <span className="text-muted-foreground">Total Questions</span>
+                                    <span className="font-semibold text-foreground">{attempt.questions.length}</span>
+                                </div>
+                                <div className="flex items-center justify-between border-b pb-2.5">
+                                    <span className="text-muted-foreground">Questions Answered</span>
+                                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">{answeredCount} of {attempt.questions.length}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-muted-foreground">Result Status</span>
+                                    <span className="inline-flex items-center gap-1.5 font-semibold text-amber-600 dark:text-amber-400">
+                                        <Clock className="h-3.5 w-3.5" />
+                                        Will be announced shortly
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="rounded-lg bg-muted/40 p-4 text-xs sm:text-sm text-muted-foreground leading-relaxed border">
+                                📢 The results and answer key for this test have not been published yet. Once the administrator announces the results, your score and detailed answer keys will be made available right here.
+                            </div>
+
+                            {canShowScore(attempt) && (
+                                <div className="pt-1">
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Provisional Score</p>
+                                    <p className="mt-1 text-3xl font-bold text-foreground">
+                                        {attempt.score} <span className="text-muted-foreground text-xl">/ {attempt.total_marks}</span>
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="pt-2 flex justify-center">
+                                <Button
+                                    size="lg"
+                                    className="px-8 shadow-sm cursor-pointer font-semibold"
+                                    onClick={() => {
+                                        setIsNavigating(true);
+                                        router.push("/student/tests");
+                                    }}
+                                    disabled={isNavigating}
+                                >
+                                    {isNavigating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    {isNavigating ? "Redirecting..." : "Return to My Tests"}
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <div className={effectiveViewMode === "list" ? "space-y-5 w-full" : "grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start"}>
+                        <div className="space-y-5">
+                            {/* ── View Mode Toggle & Questions Header ── */}
+                            <div className="flex items-center justify-between gap-3 pb-1">
+                                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                                    {effectiveViewMode === "list"
+                                        ? `All Questions (${attempt.questions.length})`
+                                        : `Question ${currentQuestionIndex + 1} of ${attempt.questions.length}`}
+                                </span>
+                                {!isActive && (
+                                    <div className="flex items-center gap-2">
+                                        {canShowPdf && (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setIsPdfModalOpen(true)}
+                                                className="h-8 px-3 text-xs gap-1.5 font-medium border-primary/20 hover:bg-primary/5 hover:text-primary cursor-pointer shadow-2xs"
+                                            >
+                                                <FileText className="h-3.5 w-3.5 text-primary" />
+                                                View Answer Key
+                                            </Button>
+                                        )}
+                                        <div className="flex items-center rounded-lg border bg-muted/40 p-1">
+                                            <Button
+                                                type="button"
+                                                variant={effectiveViewMode === "single" ? "default" : "ghost"}
+                                                size="sm"
+                                                className="h-7 px-2.5 text-xs cursor-pointer"
+                                                onClick={() => {
+                                                    void flushPendingSave();
+                                                    setUserViewMode("single");
+                                                }}
+                                            >
+                                                <LayoutGrid className="mr-1.5 h-3.5 w-3.5" />
+                                                Single Question
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant={effectiveViewMode === "list" ? "default" : "ghost"}
+                                                size="sm"
+                                                className="h-7 px-2.5 text-xs cursor-pointer"
+                                                onClick={() => {
+                                                    void flushPendingSave();
+                                                    setUserViewMode("list");
+                                                }}
+                                            >
+                                                <List className="mr-1.5 h-3.5 w-3.5" />
+                                                List View (All)
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* ── Questions List or Single View ── */}
+                            {effectiveViewMode === "list" ? (
+                                <div className="space-y-5">
+                                    {attempt.questions.map((q) => renderQuestionCard(q))}
+                                </div>
+                            ) : (
+                                <>
+                                    {currentQuestion && renderQuestionCard(currentQuestion)}
 
                                 {attempt.questions.length > 1 && (
-                                    <div className="flex items-center justify-between gap-4">
+                                    <div className="flex items-center justify-between gap-4 pt-2">
                                         <Button
+                                            type="button"
                                             variant="outline"
+                                            size="lg"
+                                            className="h-11 px-6 text-sm sm:text-base font-semibold gap-2 shadow-xs cursor-pointer hover:bg-muted/80 border-muted-foreground/30 disabled:opacity-40"
                                             onClick={() => {
                                                 void flushPendingSave();
                                                 setCurrentQuestionIndex((index) => Math.max(0, index - 1));
                                             }}
                                             disabled={currentQuestionIndex === 0}
                                         >
+                                            <ChevronLeft className="h-5 w-5" />
                                             Previous
                                         </Button>
-                                        <span className="text-sm font-medium text-muted-foreground">
+                                        <span className="text-sm sm:text-base font-semibold text-muted-foreground font-mono">
                                             Question {currentQuestionIndex + 1} of {attempt.questions.length}
                                         </span>
                                         <Button
-                                            variant="outline"
+                                            type="button"
+                                            variant="default"
+                                            size="lg"
+                                            className="h-11 px-6 text-sm sm:text-base font-semibold gap-2 shadow-sm cursor-pointer disabled:opacity-40"
                                             onClick={() => {
                                                 void flushPendingSave();
                                                 setCurrentQuestionIndex((index) => Math.min(attempt.questions.length - 1, index + 1));
@@ -1022,114 +1061,122 @@ export default function AttemptRunner({
                                             disabled={currentQuestionIndex === attempt.questions.length - 1}
                                         >
                                             Next
+                                            <ChevronRight className="h-5 w-5" />
                                         </Button>
                                     </div>
                                 )}
                             </>
                         )}
 
-                        {/* ── Result after submission / expiry ── */}
-                        {(isSubmitted(attempt.status) || isExpired(attempt.status)) && (
-                            <Card
-                                className={`text-center ${
-                                    isSubmitted(attempt.status)
+                            {/* ── Result after submission / expiry ── */}
+                            {(isSubmitted(attempt.status) || isExpired(attempt.status)) && (
+                                <Card
+                                    className={`text-center ${isSubmitted(attempt.status)
                                         ? "border-primary/30 bg-primary/5"
                                         : "border-destructive/30 bg-destructive/5"
-                                }`}
-                            >
-                                <CardContent className="py-8">
-                                    {isSubmitted(attempt.status) ? (
-                                        <>
-                                            <p className="text-muted-foreground text-sm">Final score</p>
-                                            {canShowScore(attempt) ? (
-                                                <p className="mt-1 text-4xl font-bold">
-                                                    {attempt.score}{" "}
-                                                    <span className="text-muted-foreground text-2xl">/ {attempt.total_marks}</span>
+                                        }`}
+                                >
+                                    <CardContent className="py-8">
+                                        {isSubmitted(attempt.status) ? (
+                                            <>
+                                                <p className="text-muted-foreground text-sm">Final score</p>
+                                                {canShowScore(attempt) ? (
+                                                    <p className="mt-1 text-4xl font-bold">
+                                                        {attempt.score}{" "}
+                                                        <span className="text-muted-foreground text-2xl">/ {attempt.total_marks}</span>
+                                                    </p>
+                                                ) : (
+                                                    <p className="mt-2 text-xl font-medium text-amber-600 dark:text-amber-400">
+                                                        Score Hidden (Result Not Out)
+                                                    </p>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <p className="text-destructive font-semibold text-lg">Time expired</p>
+                                                <p className="text-muted-foreground mt-1 text-sm">
+                                                    Your time ran out before you could submit.
                                                 </p>
-                                            ) : (
-                                                <p className="mt-2 text-xl font-medium text-amber-600 dark:text-amber-400">
-                                                    Score Hidden (Result Not Out)
-                                                </p>
-                                            )}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <p className="text-destructive font-semibold text-lg">Time expired</p>
-                                            <p className="text-muted-foreground mt-1 text-sm">
-                                                Your time ran out before you could submit.
-                                            </p>
-                                            {canShowScore(attempt) ? (
-                                                <p className="mt-3 text-2xl font-bold">
-                                                    {attempt.score}{" "}
-                                                    <span className="text-muted-foreground text-xl">/ {attempt.total_marks}</span>
-                                                </p>
-                                            ) : (
-                                                <p className="mt-2 text-xl font-medium text-amber-600 dark:text-amber-400">
-                                                    Score Hidden (Result Not Out)
-                                                </p>
-                                            )}
-                                        </>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        )}
-                    </div>
-                    {/* ── end left column ── */}
+                                                {canShowScore(attempt) ? (
+                                                    <p className="mt-3 text-2xl font-bold">
+                                                        {attempt.score}{" "}
+                                                        <span className="text-muted-foreground text-xl">/ {attempt.total_marks}</span>
+                                                    </p>
+                                                ) : (
+                                                    <p className="mt-2 text-xl font-medium text-amber-600 dark:text-amber-400">
+                                                        Score Hidden (Result Not Out)
+                                                    </p>
+                                                )}
+                                            </>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
+                        {/* ── end left column ── */}
 
-                    {/* ── Question palette / navigator (Only in single view) ── */}
-                    {effectiveViewMode === "single" && (
-                        <aside data-exam-sidebar className="lg:sticky lg:top-32">
-                            <Card>
-                                <CardHeader className="pb-3">
-                                    <CardTitle className="text-base font-semibold">Questions</CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div
-                                        className="grid grid-cols-6 gap-2 sm:grid-cols-8 lg:grid-cols-6"
-                                        role="navigation"
-                                        aria-label="Question navigator"
-                                    >
-                                        {attempt.questions.map((q, index) => {
-                                            const answered = q.selected_option_id !== null;
-                                            const isCurrent = index === currentQuestionIndex;
-                                            let bubbleClasses =
-                                                "flex h-9 w-9 items-center justify-center rounded-full border text-sm font-medium transition-colors ";
-                                            if (answered) {
-                                                bubbleClasses += "border-emerald-500 bg-emerald-500 text-white ";
-                                            } else {
-                                                bubbleClasses += "border-border bg-muted text-muted-foreground hover:bg-muted/70 ";
-                                            }
-                                            if (isCurrent) {
-                                                bubbleClasses += "ring-2 ring-primary ring-offset-2 ring-offset-background ";
-                                            }
-                                            return (
-                                                <button
-                                                    key={q.id}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        void flushPendingSave();
-                                                        setCurrentQuestionIndex(index);
-                                                    }}
-                                                    className={bubbleClasses}
-                                                    aria-label={`Question ${q.position}, ${answered ? "answered" : "not answered"}`}
-                                                    aria-current={isCurrent ? "true" : undefined}
-                                                >
-                                                    {q.position}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
+                        {/* ── Question palette / navigator (Only in single view) ── */}
+                        {effectiveViewMode === "single" && (
+                            <aside data-exam-sidebar className="lg:sticky lg:top-32">
+                                <Button
+                                    onClick={() => handleSubmit(false)}
+                                    disabled={submitting}
+                                    size="lg"
+                                    className="w-full shadow-md my-2"
+                                >
+                                    {submitting ? "Submitting…" : "Finish the entire test"}
+                                </Button>
+                                <Card>
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-base font-semibold">Questions</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div
+                                            className="grid grid-cols-6 gap-2 sm:grid-cols-8 lg:grid-cols-6"
+                                            role="navigation"
+                                            aria-label="Question navigator"
+                                        >
+                                            {attempt.questions.map((q, index) => {
+                                                const answered = q.selected_option_id !== null;
+                                                const isCurrent = index === currentQuestionIndex;
+                                                let bubbleClasses =
+                                                    "flex h-9 w-9 items-center justify-center rounded-full border text-sm font-medium transition-colors ";
+                                                if (answered) {
+                                                    bubbleClasses += "border-emerald-500 bg-emerald-500 text-white ";
+                                                } else {
+                                                    bubbleClasses += "border-border bg-muted text-muted-foreground hover:bg-muted/70 ";
+                                                }
+                                                if (isCurrent) {
+                                                    bubbleClasses += "ring-2 ring-primary ring-offset-2 ring-offset-background ";
+                                                }
+                                                return (
+                                                    <button
+                                                        key={q.id}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            void flushPendingSave();
+                                                            setCurrentQuestionIndex(index);
+                                                        }}
+                                                        className={bubbleClasses}
+                                                        aria-label={`Question ${q.position}, ${answered ? "answered" : "not answered"}`}
+                                                        aria-current={isCurrent ? "true" : undefined}
+                                                    >
+                                                        {q.position}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
 
-                                    <div className="space-y-2 border-t pt-4 text-sm">
-                                        <div className="flex items-center gap-3">
-                                            <span className="h-4 w-4 shrink-0 rounded-full border border-border bg-muted" />
-                                            <span className="text-muted-foreground">Not answered</span>
+                                        <div className="space-y-2 border-t pt-4 text-sm">
+                                            <div className="flex items-center gap-3">
+                                                <span className="h-4 w-4 shrink-0 rounded-full border border-border bg-muted" />
+                                                <span className="text-muted-foreground">Not answered</span>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="h-4 w-4 shrink-0 rounded-full border border-emerald-500 bg-emerald-500" />
+                                                <span className="text-muted-foreground">Answered</span>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-3">
-                                            <span className="h-4 w-4 shrink-0 rounded-full border border-emerald-500 bg-emerald-500" />
-                                            <span className="text-muted-foreground">Answered</span>
-                                        </div>
-                                    </div>
 
                                     {isActive && (
                                         <div className="space-y-2 border-t pt-4">
@@ -1142,7 +1189,7 @@ export default function AttemptRunner({
                                                 size="lg"
                                                 className="w-full shadow-md"
                                             >
-                                                {submitting ? "Submitting…" : "Submit test"}
+                                                {submitting ? "Submitting…" : "Finish the entire test"}
                                             </Button>
                                         </div>
                                     )}
