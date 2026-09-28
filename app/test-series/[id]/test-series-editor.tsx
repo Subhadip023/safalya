@@ -762,7 +762,7 @@ Please generate 5 high-quality questions. Respond with the raw JSON array ONLY. 
                             <span>Batches</span>
                             {selectedBatchIds.length > 0 ? (
                                 <Badge variant="default" className="text-[10px] px-1.5 py-0 bg-emerald-600 hover:bg-emerald-600 text-white">
-                                    {selectedBatchIds.length} Assigned
+                                    {selectedBatchIds.length} Unassign
                                 </Badge>
                             ) : (
                                 <Badge variant="outline" className="text-[10px] px-1.5 py-0">

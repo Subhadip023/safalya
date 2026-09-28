@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import Loader from "@/components/loader";
 
 function formatDuration(seconds: number) {
     const h = Math.floor(seconds / 3600);
@@ -62,6 +63,7 @@ export default function StudentTests({
     const activeTab = accessType === "private" || accessType === "organization" ? "organization" : accessType === "public" ? "public" : "all";
 
     const router = useRouter();
+    const [isFilterPending, startFilterTransition] = useTransition();
     const pendingTest = paginatedTests.items.find((test) => test.id === pendingTestId);
     const attemptBySeriesId = new Map<
         number,
@@ -128,7 +130,9 @@ export default function StudentTests({
         if (page > 1) params.set("page", String(page));
         if (limit !== 10) params.set("limit", String(limit));
 
-        router.push(`/student/tests?${params.toString()}`);
+        startFilterTransition(() => {
+            router.push(`/student/tests?${params.toString()}`);
+        });
     }
 
     function handleTabChange(tab: "all" | "public" | "organization") {
@@ -172,7 +176,9 @@ export default function StudentTests({
         setSelectedOrg("");
         setSortOrder("asc");
         setAccessType("");
-        router.push("/student/tests");
+        startFilterTransition(() => {
+            router.push("/student/tests");
+        });
     }
 
     async function start(seriesId: number) {
@@ -481,7 +487,13 @@ export default function StudentTests({
             </div>
 
             {/* ── Test Grid ── */}
-            {displayItems.length === 0 ? (
+            <div className="relative">
+                {isFilterPending && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-[2px] rounded-xl">
+                        <Loader size="lg" />
+                    </div>
+                )}
+                {displayItems.length === 0 ? (
                 <div className="rounded-xl border border-dashed p-10 text-center bg-card">
                     <p className="text-muted-foreground text-sm">
                         {activeTab === "organization"
@@ -588,6 +600,7 @@ export default function StudentTests({
                     })}
                 </div>
             )}
+            </div>
 
             {/* ── Pagination Footer ── */}
             {paginatedTests.total_pages > 1 && (
