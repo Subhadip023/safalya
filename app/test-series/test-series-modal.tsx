@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { X } from "lucide-react";
 import { useRef } from "react";
+import Loader from "@/components/loader";
 import type { TestSeries } from "../services/test-series";
 
 function formatDateTimeLocal(isoString?: string): string {
@@ -217,13 +218,13 @@ export default function TestSeriesModal({
                             type="submit"
                             disabled={busy}
                         >
-                            {busy
-                                ? editingSeries
-                                    ? "Saving…"
-                                    : "Creating…"
-                                : editingSeries
-                                ? "Save changes"
-                                : "Create test"}
+                            {busy ? (
+                                <Loader size="sm" label={editingSeries ? "Saving..." : "Creating..."} />
+                            ) : editingSeries ? (
+                                "Save changes"
+                            ) : (
+                                "Create test"
+                            )}
                         </Button>
                     </div>
                 </form>
