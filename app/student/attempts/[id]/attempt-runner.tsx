@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { sanitizeHtmlContent } from "@/lib/sanitize";
 import { toast } from "sonner";
-import { AlertTriangle, Check, FileText, LayoutGrid, List, Loader2, RotateCcw, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, FileText, LayoutGrid, List, Loader2, RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,8 @@ type AttemptQuestion = {
     position: number;
     question: string;
     marks: string;
+    negative_marks?: string | number | null;
+    marks_awarded?: string | number | null;
     options: AttemptOption[];
     selected_option_id: number | null;
     correct_option_id?: number | null;
@@ -37,6 +39,8 @@ export type Attempt = {
     status: number | string;
     score: string;
     total_marks: string;
+    has_negative_marks?: boolean;
+    max_negative_mark?: number;
     is_score_show?: boolean | number | string;
     is_result_show?: boolean | number | string;
     result_file_key?: string | null;
@@ -519,11 +523,11 @@ export default function AttemptRunner({
                                     </Badge>
                                 ) : q.correct_option_id != null && String(q.selected_option_id) === String(q.correct_option_id) ? (
                                     <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                                        Correct
+                                        Correct (+{q.marks})
                                     </Badge>
                                 ) : (
                                     <Badge variant="outline" className="border-destructive/40 bg-destructive/10 text-destructive">
-                                        Incorrect
+                                        Incorrect {q.negative_marks && Number(q.negative_marks) > 0 ? `(-${q.negative_marks})` : "(0)"}
                                     </Badge>
                                 )}
                             </span>
@@ -667,7 +671,7 @@ export default function AttemptRunner({
                             <CardTitle className="text-2xl">Resume this test</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-3 gap-3">
                                 <div className="rounded-lg border bg-muted/40 p-3 text-center">
                                     <p className="text-xl font-bold">{attempt.questions.length}</p>
                                     <p className="text-xs text-muted-foreground">
@@ -680,7 +684,28 @@ export default function AttemptRunner({
                                     </p>
                                     <p className="text-xs text-muted-foreground">Test duration</p>
                                 </div>
+                                <div className="rounded-lg border bg-muted/40 p-3 text-center">
+                                    <p className="text-xl font-bold">{attempt.total_marks}</p>
+                                    <p className="text-xs text-muted-foreground">Total Marks</p>
+                                </div>
                             </div>
+
+                            {attempt.has_negative_marks ? (
+                                <div className="flex items-center gap-2.5 rounded-lg border border-destructive/30 bg-destructive/10 p-3.5 text-xs text-destructive font-medium">
+                                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                                    <span>
+                                        <strong>Negative Marking Applicable:</strong> Wrong answers will deduct up to{" "}
+                                        <strong>{attempt.max_negative_mark ? `-${attempt.max_negative_mark}` : "negative"}</strong> marks per question. Unattempted questions carry 0 penalty.
+                                    </span>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-700 dark:text-emerald-400 font-medium">
+                                    <Check className="h-4 w-4 shrink-0" />
+                                    <span>
+                                        <strong>No Negative Marking:</strong> Incorrect answers carry 0 negative penalty.
+                                    </span>
+                                </div>
+                            )}
                             <div className="grid gap-3 sm:grid-cols-3 text-sm">
                                 <div className="rounded-lg border bg-muted/40 p-4">
                                     <p className="font-semibold">Fullscreen mode required</p>
@@ -999,22 +1024,29 @@ export default function AttemptRunner({
                                 {currentQuestion && renderQuestionCard(currentQuestion)}
 
                                 {attempt.questions.length > 1 && (
-                                    <div className="flex items-center justify-between gap-4">
+                                    <div className="flex items-center justify-between gap-4 pt-2">
                                         <Button
+                                            type="button"
                                             variant="outline"
+                                            size="lg"
+                                            className="h-11 px-6 text-sm sm:text-base font-semibold gap-2 shadow-xs cursor-pointer hover:bg-muted/80 border-muted-foreground/30 disabled:opacity-40"
                                             onClick={() => {
                                                 void flushPendingSave();
                                                 setCurrentQuestionIndex((index) => Math.max(0, index - 1));
                                             }}
                                             disabled={currentQuestionIndex === 0}
                                         >
+                                            <ChevronLeft className="h-5 w-5" />
                                             Previous
                                         </Button>
-                                        <span className="text-sm font-medium text-muted-foreground">
+                                        <span className="text-sm sm:text-base font-semibold text-muted-foreground font-mono">
                                             Question {currentQuestionIndex + 1} of {attempt.questions.length}
                                         </span>
                                         <Button
-                                            variant="outline"
+                                            type="button"
+                                            variant="default"
+                                            size="lg"
+                                            className="h-11 px-6 text-sm sm:text-base font-semibold gap-2 shadow-sm cursor-pointer disabled:opacity-40"
                                             onClick={() => {
                                                 void flushPendingSave();
                                                 setCurrentQuestionIndex((index) => Math.min(attempt.questions.length - 1, index + 1));
@@ -1022,6 +1054,7 @@ export default function AttemptRunner({
                                             disabled={currentQuestionIndex === attempt.questions.length - 1}
                                         >
                                             Next
+                                            <ChevronRight className="h-5 w-5" />
                                         </Button>
                                     </div>
                                 )}
@@ -1142,7 +1175,7 @@ export default function AttemptRunner({
                                                 size="lg"
                                                 className="w-full shadow-md"
                                             >
-                                                {submitting ? "Submitting…" : "Submit test"}
+                                                {submitting ? "Submitting…" : "Finish the entire test"}
                                             </Button>
                                         </div>
                                     )}

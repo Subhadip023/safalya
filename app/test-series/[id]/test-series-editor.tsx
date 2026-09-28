@@ -200,6 +200,71 @@ export default function TestSeriesEditor({
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isAddPanelOpen, setIsAddPanelOpen] = useState(false);
 
+    // Per-question marks & negative marks state map
+    const [questionConfigs, setQuestionConfigs] = useState<Record<number, { marks: number; negative_marks: number }>>(() => {
+        const initialMap: Record<number, { marks: number; negative_marks: number }> = {};
+        if (series.questions) {
+            for (const sq of series.questions) {
+                const localQ = availableQuestions.find((q) => q.id === sq.question_id);
+                const defaultMarks = localQ ? parseFloat(localQ.marks) : 1;
+                initialMap[sq.question_id] = {
+                    marks: sq.marks !== undefined && sq.marks !== null ? Number(sq.marks) : defaultMarks,
+                    negative_marks: sq.negative_marks !== undefined && sq.negative_marks !== null ? Number(sq.negative_marks) : 0,
+                };
+            }
+        }
+        return initialMap;
+    });
+
+    const setQuestionMarks = (qId: number, marksVal: string) => {
+        const parsed = parseFloat(marksVal);
+        setQuestionConfigs((prev) => ({
+            ...prev,
+            [qId]: {
+                marks: isNaN(parsed) ? 0 : parsed,
+                negative_marks: prev[qId]?.negative_marks ?? 0,
+            },
+        }));
+    };
+
+    const setQuestionNegMarks = (qId: number, negVal: string) => {
+        const parsed = parseFloat(negVal);
+        setQuestionConfigs((prev) => ({
+            ...prev,
+            [qId]: {
+                marks: prev[qId]?.marks ?? 1,
+                negative_marks: isNaN(parsed) ? 0 : parsed,
+            },
+        }));
+    };
+
+    const [batchApplyMarks, setBatchApplyMarks] = useState("");
+    const [batchApplyNegMarks, setBatchApplyNegMarks] = useState("");
+
+    const handleApplyToAllQuestions = () => {
+        const marksNum = parseFloat(batchApplyMarks);
+        const negNum = parseFloat(batchApplyNegMarks);
+
+        if (!isNaN(marksNum) && marksNum <= 0) {
+            toast.error("Marks must be greater than zero.");
+            return;
+        }
+
+        setQuestionConfigs((prev) => {
+            const next = { ...prev };
+            for (const id of linkedQuestionIds) {
+                const existing = next[id] || { marks: 1, negative_marks: 0 };
+                next[id] = {
+                    marks: !isNaN(marksNum) ? marksNum : existing.marks,
+                    negative_marks: !isNaN(negNum) ? negNum : existing.negative_marks,
+                };
+            }
+            return next;
+        });
+
+        toast.success("Applied marks & negative marks settings to all questions!");
+    };
+
     // Filter controls for adding existing questions
     const [searchQuery, setSearchQuery] = useState("");
     const [topicFilter, setTopicFilter] = useState("");
@@ -207,6 +272,7 @@ export default function TestSeriesEditor({
     // Create question form states
     const [newQText, setNewQText] = useState("");
     const [newQMarks, setNewQMarks] = useState("1");
+    const [newQNegMarks, setNewQNegMarks] = useState("0");
     const [newQTopicId, setNewQTopicId] = useState("");
     const [newQOptions, setNewQOptions] = useState([
         { ans: "", is_correct: true },
@@ -232,8 +298,15 @@ export default function TestSeriesEditor({
     }, [linkedQuestionIds, localQuestions]);
 
     const totalMarks = useMemo(() => {
-        return linkedQuestions.reduce((sum, q) => sum + parseFloat(q.marks), 0);
-    }, [linkedQuestions]);
+        return linkedQuestionIds.reduce((sum, id) => {
+            const config = questionConfigs[id];
+            if (config) {
+                return sum + (Number(config.marks) || 0);
+            }
+            const q = localQuestions.find((item) => item.id === id);
+            return sum + (q ? parseFloat(q.marks) : 1);
+        }, 0);
+    }, [linkedQuestionIds, localQuestions, questionConfigs]);
 
     const searchableQuestions = useMemo(() => {
         let result = localQuestions;
@@ -346,6 +419,14 @@ export default function TestSeriesEditor({
             if (prev.includes(id)) {
                 return prev.filter((item) => item !== id);
             } else {
+                if (!questionConfigs[id]) {
+                    const localQ = localQuestions.find((q) => q.id === id);
+                    const defaultMarks = localQ ? parseFloat(localQ.marks) : 1;
+                    setQuestionConfigs((configs) => ({
+                        ...configs,
+                        [id]: { marks: defaultMarks, negative_marks: 0 },
+                    }));
+                }
                 return [...prev, id];
             }
         });
@@ -429,13 +510,13 @@ export default function TestSeriesEditor({
                     batch_ids: selectedBatchIds,
                     valid_until: validUntilDate.toISOString(),
                     duration_seconds: durationSeconds,
-                    questions: linkedQuestionIds.map(id => {
-                        const originalQ = series.questions?.find(q => q.question_id === id);
-                        const localQ = localQuestions.find(q => q.id === id);
+                    questions: linkedQuestionIds.map((id) => {
+                        const config = questionConfigs[id];
+                        const localQ = localQuestions.find((q) => q.id === id);
                         return {
                             question_id: id,
-                            marks: originalQ?.marks ?? (localQ ? parseFloat(localQ.marks) : 1),
-                            negative_marks: originalQ?.negative_marks ?? 0,
+                            marks: config?.marks ?? (localQ ? parseFloat(localQ.marks) : 1),
+                            negative_marks: config?.negative_marks ?? 0,
                         };
                     }),
                     is_active: isActive,
@@ -981,7 +1062,51 @@ Please generate 5 high-quality questions. Respond with the raw JSON array ONLY. 
                                 </div>
                             )}
 
-                            {/* Linked list rendering */}
+                            {/* Batch Apply & Linked list rendering */}
+                            {linkedQuestions.length > 0 && (
+                                <div className="flex flex-wrap items-center justify-between gap-3 p-3 mb-3 bg-muted/20 border rounded-xl text-xs">
+                                    <div className="flex items-center gap-2 font-medium">
+                                        <Sparkles className="w-4 h-4 text-primary shrink-0" />
+                                        <span>Batch Apply Marks & Negative Marks to All Questions:</span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-1">
+                                            <Label className="text-[11px] text-muted-foreground font-semibold">Marks:</Label>
+                                            <Input
+                                                type="number"
+                                                step="0.5"
+                                                min="0.01"
+                                                placeholder="e.g. 1"
+                                                value={batchApplyMarks}
+                                                onChange={(e) => setBatchApplyMarks(e.target.value)}
+                                                className="w-16 h-7 text-xs px-2 bg-background"
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <Label className="text-[11px] text-muted-foreground font-semibold">Neg Marks:</Label>
+                                            <Input
+                                                type="number"
+                                                step="0.25"
+                                                min="0"
+                                                placeholder="e.g. 0.25"
+                                                value={batchApplyNegMarks}
+                                                onChange={(e) => setBatchApplyNegMarks(e.target.value)}
+                                                className="w-16 h-7 text-xs px-2 bg-background text-destructive"
+                                            />
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={handleApplyToAllQuestions}
+                                            className="h-7 text-xs font-semibold"
+                                        >
+                                            Apply to All
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+
                             {linkedQuestions.length === 0 ? (
                                 <div className="border border-dashed rounded-xl p-12 text-center">
                                     <p className="text-muted-foreground text-sm">
@@ -995,8 +1120,9 @@ Please generate 5 high-quality questions. Respond with the raw JSON array ONLY. 
                                 <div className="border rounded-xl divide-y overflow-hidden bg-card">
                                     {linkedQuestions.map((q, idx) => {
                                         const plain = sanitizeHtml(q.question, { allowedTags: [] });
+                                        const config = questionConfigs[q.id] || { marks: parseFloat(q.marks) || 1, negative_marks: 0 };
                                         return (
-                                            <div key={q.id} className="flex items-center justify-between px-4 py-3 gap-4 hover:bg-muted/10 transition-colors">
+                                            <div key={q.id} className="flex flex-wrap items-center justify-between px-4 py-3 gap-4 hover:bg-muted/10 transition-colors">
                                                 <div className="flex items-center gap-3 min-w-0 flex-1">
                                                     <span className="text-muted-foreground text-sm font-semibold font-mono">
                                                         {String(idx + 1).padStart(2, "0")}
@@ -1014,8 +1140,32 @@ Please generate 5 high-quality questions. Respond with the raw JSON array ONLY. 
                                                     </span>
                                                 </div>
 
-                                                <div className="flex items-center gap-2 shrink-0">
-                                                    <Badge variant="outline" className="text-sm font-bold py-0">{q.marks} marks</Badge>
+                                                <div className="flex items-center gap-3 shrink-0">
+                                                    <div className="flex items-center gap-1.5 bg-muted/40 p-1 rounded-lg border">
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="text-[10px] font-bold text-muted-foreground uppercase px-1">Marks:</span>
+                                                            <Input
+                                                                type="number"
+                                                                step="0.5"
+                                                                min="0.01"
+                                                                className="w-16 h-7 text-xs font-semibold px-1 text-center bg-background"
+                                                                value={config.marks}
+                                                                onChange={(e) => setQuestionMarks(q.id, e.target.value)}
+                                                            />
+                                                        </div>
+                                                        <div className="flex items-center gap-1 border-l pl-1.5">
+                                                            <span className="text-[10px] font-bold text-destructive uppercase px-1">- Neg:</span>
+                                                            <Input
+                                                                type="number"
+                                                                step="0.25"
+                                                                min="0"
+                                                                className="w-16 h-7 text-xs font-semibold px-1 text-center bg-background text-destructive"
+                                                                value={config.negative_marks}
+                                                                onChange={(e) => setQuestionNegMarks(q.id, e.target.value)}
+                                                            />
+                                                        </div>
+                                                    </div>
+
                                                     <div className="flex border rounded-md">
                                                         <Button
                                                             type="button"

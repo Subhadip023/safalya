@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Search, X, Tag, Filter, RotateCcw, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Search, X, Tag, Filter, RotateCcw, ChevronLeft, ChevronRight, Loader2, AlertTriangle, Check } from "lucide-react";
 import type { PaginatedTests } from "./page";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -236,7 +236,7 @@ export default function StudentTests({
                         <CardDescription>{pendingTest.name}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-3 gap-3">
                             <div className="rounded-lg border bg-muted/40 p-3 text-center">
                                 <p className="text-xl font-bold">{pendingTest.question_count}</p>
                                 <p className="text-xs text-muted-foreground">
@@ -247,7 +247,28 @@ export default function StudentTests({
                                 <p className="text-xl font-bold">{formatDuration(pendingTest.duration_seconds)}</p>
                                 <p className="text-xs text-muted-foreground">Test duration</p>
                             </div>
+                            <div className="rounded-lg border bg-muted/40 p-3 text-center">
+                                <p className="text-xl font-bold">{pendingTest.total_marks ? pendingTest.total_marks : pendingTest.question_count}</p>
+                                <p className="text-xs text-muted-foreground">Total Marks</p>
+                            </div>
                         </div>
+
+                        {pendingTest.has_negative_marks ? (
+                            <div className="flex items-center gap-2.5 rounded-lg border border-destructive/30 bg-destructive/10 p-3.5 text-xs text-destructive font-medium">
+                                <AlertTriangle className="h-4 w-4 shrink-0" />
+                                <span>
+                                    <strong>Negative Marking Applicable:</strong> Wrong answers will deduct up to{" "}
+                                    <strong>{pendingTest.max_negative_mark ? `-${pendingTest.max_negative_mark}` : "negative"}</strong> marks per question. Unattempted questions carry 0 penalty.
+                                </span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-700 dark:text-emerald-400 font-medium">
+                                <Check className="h-4 w-4 shrink-0" />
+                                <span>
+                                    <strong>No Negative Marking:</strong> Incorrect answers carry 0 negative penalty.
+                                </span>
+                            </div>
+                        )}
                         <div className="grid gap-3 sm:grid-cols-3 text-sm">
                             <div className="rounded-lg border bg-muted/40 p-4">
                                 <p className="font-semibold">Fullscreen mode required</p>
