@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Topic } from "../../services/topics";
-import { TestSeries } from "../../services/test-series";
+import { Topic } from "@/app/services/topics";
+import { TestSeries } from "@/app/services/test-series";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -331,12 +331,18 @@ function QuestionCard({
 type Mode = "builder" | "json";
 type TestSeriesOption = "none" | "existing" | "new";
 
-export default function BulkUploader({
+export default function AdvancedBulkUpload({
     topics = [],
     testSeries = [],
+    preselectedTestSeriesId,
+    onSuccess,
+    onCancel,
 }: {
     topics?: Topic[];
     testSeries?: TestSeries[];
+    preselectedTestSeriesId?: number;
+    onSuccess?: (newQuestions: any[], assignedSeriesId?: number) => void;
+    onCancel?: () => void;
 }) {
     const router = useRouter();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -356,8 +362,8 @@ export default function BulkUploader({
     } | null>(null);
 
     // ── Test Series Assignment state ───────────────────────────────────────
-    const [tsOption, setTsOption] = useState<TestSeriesOption>("none");
-    const [selectedTsId, setSelectedTsId] = useState<string>("");
+    const [tsOption, setTsOption] = useState<TestSeriesOption>(preselectedTestSeriesId ? "existing" : "none");
+    const [selectedTsId, setSelectedTsId] = useState<string>(preselectedTestSeriesId ? String(preselectedTestSeriesId) : "");
     const [newTsName, setNewTsName] = useState<string>("");
     const [newTsAccessType, setNewTsAccessType] = useState<"public" | "invite_only" | "private">("public");
     const [newTsDuration, setNewTsDuration] = useState<string>("60");
@@ -513,10 +519,17 @@ export default function BulkUploader({
             setValidationErrors([]);
             if (assignedSeriesName) {
                 toast.success(`${ids.length} questions created and assigned to "${assignedSeriesName}"!`);
+            } else if (preselectedTestSeriesId) {
+                toast.success(`${ids.length} questions created and automatically assigned!`);
             } else {
                 toast.success(`${ids.length} question${ids.length !== 1 ? "s" : ""} created!`);
             }
-            router.refresh();
+            
+            if (onSuccess) {
+                onSuccess(data as any[], assignedSeriesId);
+            } else {
+                router.refresh();
+            }
         } catch (err) {
             toast.error(err instanceof Error ? err.message : "Bulk upload failed.");
         } finally {
@@ -629,7 +642,8 @@ Please generate ${promptNumQuestions.trim() || "5"} high-quality questions${prom
             )}
 
             {/* ── Test Series Assignment Card ── */}
-            <Card className="border bg-card">
+            {!preselectedTestSeriesId && (
+                <Card className="border bg-card">
                 <CardHeader className="py-3.5 px-4">
                     <CardTitle className="text-sm font-semibold flex items-center gap-2">
                         <Layers className="h-4 w-4 text-primary" />
@@ -736,6 +750,7 @@ Please generate ${promptNumQuestions.trim() || "5"} high-quality questions${prom
                     )}
                 </CardContent>
             </Card>
+            )}
 
             {/* ── Mode tabs ── */}
             <div className="flex gap-2">
@@ -919,6 +934,11 @@ Please generate ${promptNumQuestions.trim() || "5"} high-quality questions${prom
 
                     {/* Bottom submit */}
                     <div className="flex justify-end gap-3 pt-2">
+                        {onCancel && (
+                            <Button type="button" variant="outline" onClick={onCancel}>
+                                Cancel
+                            </Button>
+                        )}
                         <Button
                             type="button"
                             variant="outline"

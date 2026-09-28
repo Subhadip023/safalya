@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import BulkUploader from "./bulk-uploader";
+import AdvancedBulkUpload from "@/components/advanced-bulk-upload";
 import { Button } from "@/components/ui/button";
 import { getAllTopics } from "../../services/topics";
 import { getAllTestSeries } from "../../services/test-series";
@@ -29,7 +29,7 @@ export default async function BulkUploadPage() {
                     ← Back to questions
                 </Button>
             </div>
-            <BulkUploader topics={topics} testSeries={testSeries} />
+            <AdvancedBulkUpload topics={topics} testSeries={testSeries} />
         </main>
     );
 }

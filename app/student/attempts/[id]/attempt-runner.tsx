@@ -128,6 +128,7 @@ export default function AttemptRunner({
     const [isDevToolsOpen, setIsDevToolsOpen] = useState(false);
     const [isEnteringTest, setIsEnteringTest] = useState(false);
     const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+    const [isNavigating, setIsNavigating] = useState(false);
     const router = useRouter();
     const tabWasHiddenRef = useRef(false);
     const fullscreenSubmitStartedRef = useRef(false);
@@ -919,8 +920,15 @@ export default function AttemptRunner({
                             </p>
                         )}
                         <div className="pt-4">
-                            <Button onClick={() => router.push("/student/tests")}>
-                                Return to Tests
+                            <Button 
+                                onClick={() => {
+                                    setIsNavigating(true);
+                                    router.push("/student/tests");
+                                }}
+                                disabled={isNavigating}
+                            >
+                                {isNavigating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {isNavigating ? "Navigating..." : "Return to Available Tests"}
                             </Button>
                         </div>
                     </CardContent>

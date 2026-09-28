@@ -25,6 +25,8 @@ const ReactQuill = dynamic(() => import("react-quill-new"), {
     loading: () => <div className="bg-muted h-32 animate-pulse rounded" />,
 });
 
+import AdvancedBulkUpload from "@/components/advanced-bulk-upload";
+
 const QUILL_MODULES = {
     toolbar: [
         [{ header: [1, 2, 3, false] }],
@@ -216,11 +218,6 @@ export default function TestSeriesEditor({
 
     // Bulk upload states
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
-    const [bulkJsonText, setBulkJsonText] = useState("");
-    const [bulkFileLoading, setBulkFileLoading] = useState(false);
-    const [jsonError, setJsonError] = useState<string | null>(null);
-    const [bulkBusy, setBulkBusy] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (typeof window !== "undefined") setOrigin(window.location.origin);
@@ -565,113 +562,6 @@ Please generate 5 high-quality questions. Respond with the raw JSON array ONLY. 
         null,
         2
     );
-
-    function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        setBulkFileLoading(true);
-        setJsonError(null);
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const text = event.target?.result as string;
-                // Try parsing to validate structure
-                const parsed = JSON.parse(text);
-                if (!Array.isArray(parsed)) throw new Error("JSON must be an array of questions.");
-                setBulkJsonText(JSON.stringify(parsed, null, 2));
-                toast.success("JSON file loaded successfully!");
-            } catch (err) {
-                setJsonError(err instanceof Error ? err.message : "Malformed JSON file.");
-                toast.error("Malformed JSON file.");
-            } finally {
-                setBulkFileLoading(false);
-            }
-        };
-        reader.onerror = () => {
-            setJsonError("Failed to read file.");
-            setBulkFileLoading(false);
-        };
-        reader.readAsText(file);
-    }
-
-    async function handleBulkUploadSubmit(e: FormEvent) {
-        e.preventDefault();
-        setJsonError(null);
-        let parsedPayload: any[] = [];
-        try {
-            parsedPayload = JSON.parse(bulkJsonText);
-            if (!Array.isArray(parsedPayload)) {
-                throw new Error("JSON must be an array of questions.");
-            }
-            if (parsedPayload.length === 0) {
-                throw new Error("JSON array cannot be empty.");
-            }
-            // Basic layout verification
-            parsedPayload.forEach((item, idx) => {
-                if (typeof item !== "object" || !item) {
-                    throw new Error(`Item at index ${idx} is not an object.`);
-                }
-                const plainText = String(item.question ?? "").replace(/<[^>]*>/g, "").trim();
-                if (!plainText) {
-                    throw new Error(`Item at index ${idx} has no question text.`);
-                }
-                const mVal = Number(item.marks);
-                if (!Number.isFinite(mVal) || mVal <= 0) {
-                    throw new Error(`Item at index ${idx} has invalid marks (must be > 0).`);
-                }
-                if (!Array.isArray(item.options) || item.options.length < 2) {
-                    throw new Error(`Item at index ${idx} must have at least 2 option items.`);
-                }
-                if (item.options.some((opt: any) => !String(opt.ans ?? "").trim())) {
-                    throw new Error(`Item at index ${idx} has empty option text.`);
-                }
-                const correctCount = item.options.filter((opt: any) => opt.is_correct).length;
-                if (correctCount !== 1) {
-                    throw new Error(`Item at index ${idx} must have exactly one correct option.`);
-                }
-            });
-        } catch (err) {
-            setJsonError(err instanceof Error ? err.message : "Malformed JSON.");
-            toast.error(err instanceof Error ? err.message : "Malformed JSON.");
-            return;
-        }
-
-        setBulkBusy(true);
-        try {
-            const res = await fetch("/api/backend/questions/bulk", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(
-                    parsedPayload.map((item) => ({
-                        question: String(item.question),
-                        marks: Number(item.marks),
-                        is_active: item.is_active !== false,
-                        topic_id: item.topic_id ? Number(item.topic_id) : null,
-                        options: item.options.map((opt: any) => ({
-                            ans: String(opt.ans).trim(),
-                            is_correct: !!opt.is_correct,
-                        })),
-                    }))
-                ),
-            });
-            const data = await res.json().catch(() => null);
-            if (!res.ok) throw new Error(getApiError(data, res.status));
-
-            const resultList = data as Question[];
-            // Append to local states
-            setLocalQuestions((prev) => [...prev, ...resultList]);
-            setLinkedQuestionIds((prev) => [...prev, ...resultList.map((q) => q.id)]);
-
-            toast.success(`Successfully uploaded and linked ${resultList.length} questions!`);
-            setIsBulkModalOpen(false);
-            setBulkJsonText("");
-        } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Bulk upload failed.");
-        } finally {
-            setBulkBusy(false);
-        }
-    }
 
     return (
         <div className="w-full space-y-6">
@@ -1776,14 +1666,14 @@ Please generate 5 high-quality questions. Respond with the raw JSON array ONLY. 
                     onClick={() => setIsBulkModalOpen(false)}
                 >
                     <div
-                        className="relative bg-background border rounded-xl shadow-lg w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200"
+                        className="relative bg-background border rounded-xl shadow-lg w-full max-w-5xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="px-6 py-4 border-b flex items-center justify-between bg-muted/20">
                             <div>
                                 <h3 className="text-lg font-semibold leading-none tracking-tight">Bulk Upload Questions</h3>
                                 <p className="text-sm text-muted-foreground mt-1.5">
-                                    Upload a JSON file or paste a JSON array of questions to bulk-create and link them.
+                                    Use the interactive builder or paste JSON to bulk-create and link questions.
                                 </p>
                             </div>
                             <Button
@@ -1796,93 +1686,19 @@ Please generate 5 high-quality questions. Respond with the raw JSON array ONLY. 
                             </Button>
                         </div>
 
-                        <form onSubmit={handleBulkUploadSubmit} className="flex flex-col flex-1 overflow-hidden">
-                            <div className="p-6 overflow-y-auto space-y-5 flex-1">
-                                {/* JSON file upload */}
-                                <div className="space-y-2">
-                                    <Label className="font-medium">Upload JSON File</Label>
-                                    <div className="flex items-center gap-3">
-                                        <input
-                                            type="file"
-                                            accept=".json"
-                                            ref={fileInputRef}
-                                            onChange={handleFileChange}
-                                            className="hidden"
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            disabled={bulkFileLoading}
-                                            onClick={() => fileInputRef.current?.click()}
-                                            className="flex items-center gap-2 text-xs"
-                                        >
-                                            <Upload className="h-4 w-4" />
-                                            {bulkFileLoading ? "Reading file..." : "Choose JSON File"}
-                                        </Button>
-                                        <span className="text-muted-foreground text-xs">
-                                            Or paste your JSON array directly into the editor.
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* Text area JSON input */}
-                                <div className="space-y-2 flex-1 flex flex-col min-h-64">
-                                    <div className="flex justify-between items-center">
-                                        <Label htmlFor="bulk-json" className="font-medium">Question Array JSON</Label>
-                                        <div className="flex gap-2">
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                onClick={copyAiPrompt}
-                                                className="h-7 text-[11px] font-semibold text-primary hover:text-primary hover:bg-primary/5"
-                                            >
-                                                Copy AI Prompt
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                onClick={() => {
-                                                    setBulkJsonText(BULK_TEMPLATE_EXAMPLE);
-                                                    toast.success("Template pasted into editor!");
-                                                }}
-                                                className="h-7 text-[11px] font-semibold text-primary hover:text-primary hover:bg-primary/5"
-                                            >
-                                                Paste Template Example
-                                            </Button>
-                                        </div>
-                                    </div>
-                                    <textarea
-                                        id="bulk-json"
-                                        value={bulkJsonText}
-                                        onChange={(e) => setBulkJsonText(e.target.value)}
-                                        placeholder={`[\n  {\n    "question": "<p>Example Question</p>",\n    "marks": 2,\n    "options": [\n      { "ans": "Ans A", "is_correct": true },\n      ...\n    ]\n  }\n]`}
-                                        className="w-full flex-1 min-h-48 font-mono text-xs p-3 rounded-lg border bg-muted/20 focus:outline-none focus:ring-2 focus:ring-ring resize-none overflow-y-auto"
-                                        required
-                                    />
-                                </div>
-
-                                {/* Display live parsing errors */}
-                                {jsonError && (
-                                    <div className="rounded-lg border border-destructive bg-destructive/5 p-3 text-xs text-destructive font-medium">
-                                        Error: {jsonError}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="px-6 py-4 border-t bg-muted/30 flex items-center justify-end gap-3 shrink-0">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setIsBulkModalOpen(false)}
-                                    disabled={bulkBusy}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button type="submit" disabled={bulkBusy}>
-                                    {bulkBusy ? "Uploading questions..." : "Upload questions"}
-                                </Button>
-                            </div>
-                        </form>
+                        <div className="flex-1 overflow-y-auto p-6 bg-muted/10">
+                            <AdvancedBulkUpload
+                                topics={topics}
+                                preselectedTestSeriesId={series.id}
+                                onSuccess={(newQuestions) => {
+                                    setLocalQuestions((prev) => [...prev, ...newQuestions]);
+                                    const newIds = newQuestions.map((q) => q.id || q.question_id);
+                                    setLinkedQuestionIds((prev) => [...prev, ...newIds]);
+                                    setIsBulkModalOpen(false);
+                                }}
+                                onCancel={() => setIsBulkModalOpen(false)}
+                            />
+                        </div>
                     </div>
                 </div>
             )}
