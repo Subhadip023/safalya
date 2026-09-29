@@ -1,16 +1,25 @@
 "use client";
 
 import { FormEvent, useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, CheckCircle2, KeyRound } from "lucide-react";
+import { Eye, EyeOff, CheckCircle2, KeyRound, X } from "lucide-react";
 import { toast } from "sonner";
 
 function ResetPasswordFormContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+
+  function handleClose() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/dashboard");
+    }
+  }
   
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
@@ -117,6 +126,26 @@ function ResetPasswordFormContent() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="flex items-start justify-between gap-4 pb-2 border-b">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Reset Password</h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            Update your account password below to keep your account secure.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-full shrink-0 text-muted-foreground hover:text-foreground"
+          onClick={handleClose}
+          aria-label="Close"
+          title="Close reset password form"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -229,16 +258,27 @@ function ResetPasswordFormContent() {
         </div>
       </div>
 
-      <Button type="submit" disabled={isSubmitting} className="w-full gap-2 mt-2">
-        {isSubmitting ? (
-          "Updating Password..."
-        ) : (
-          <>
-            <KeyRound className="h-4 w-4" />
-            <span>Reset Password</span>
-          </>
-        )}
-      </Button>
+      <div className="flex items-center justify-end gap-3 pt-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleClose}
+          disabled={isSubmitting}
+          className="w-1/2"
+        >
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isSubmitting} className="w-1/2 gap-2">
+          {isSubmitting ? (
+            "Updating Password..."
+          ) : (
+            <>
+              <KeyRound className="h-4 w-4" />
+              <span>Reset Password</span>
+            </>
+          )}
+        </Button>
+      </div>
     </form>
   );
 }

@@ -19,13 +19,7 @@ export default async function ResetPasswordPage() {
   return (
     <main className="mx-auto mt-8 max-w-md px-4 sm:px-6">
       <Card className="shadow-lg border border-border/60">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold tracking-tight">Reset Password</CardTitle>
-          <CardDescription>
-            Update your account password below to keep your account secure.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <ResetPasswordForm />
         </CardContent>
       </Card>
