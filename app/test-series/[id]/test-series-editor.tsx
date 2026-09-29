@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import sanitizeHtml from "sanitize-html";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { ArrowLeft, ArrowUp, ArrowDown, Trash2, Plus, X, Search, Sparkles, Upload, Users, Check, CheckCircle2, ChevronDown, ChevronUp, ExternalLink, Layers, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowUp, ArrowDown, Trash2, Edit3, Plus, X, Search, Sparkles, Upload, Users, Check, CheckCircle2, ChevronDown, ChevronUp, ExternalLink, Layers, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -199,6 +199,15 @@ export default function TestSeriesEditor({
     // Modal / Drawer controls
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isAddPanelOpen, setIsAddPanelOpen] = useState(false);
+
+    // Edit Question Modal controls
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+    const [editQText, setEditQText] = useState("");
+    const [editQMarks, setEditQMarks] = useState("1");
+    const [editQTopicId, setEditQTopicId] = useState("");
+    const [editQOptions, setEditQOptions] = useState<Array<{ id?: number; ans: string; is_correct: boolean }>>([]);
+    const [editBusy, setEditBusy] = useState(false);
 
     // Per-question marks & negative marks state map
     const [questionConfigs, setQuestionConfigs] = useState<Record<number, { marks: number; negative_marks: number }>>(() => {
@@ -590,6 +599,84 @@ export default function TestSeriesEditor({
             toast.error(err instanceof Error ? err.message : "Unable to create question.");
         } finally {
             setCreateBusy(false);
+        }
+    }
+
+    // Open Edit Question Modal
+    function openEditQuestionModal(q: Question) {
+        setEditingQuestion(q);
+        setEditQText(q.question);
+        setEditQMarks(String(q.marks));
+        setEditQTopicId(q.topic_id ? String(q.topic_id) : "");
+        setEditQOptions(
+            q.options && q.options.length > 0
+                ? q.options.map((opt) => ({ id: opt.id, ans: opt.ans, is_correct: opt.is_correct }))
+                : [
+                      { ans: "", is_correct: true },
+                      { ans: "", is_correct: false },
+                      { ans: "", is_correct: false },
+                      { ans: "", is_correct: false },
+                  ]
+        );
+        setIsEditModalOpen(true);
+    }
+
+    // Save Edited Question Handler
+    async function handleSaveEditQuestion(e: FormEvent) {
+        e.preventDefault();
+        if (!editingQuestion) return;
+
+        const plainText = editQText.replace(/<[^>]*>/g, "").trim();
+        if (!plainText || editQOptions.some((opt) => !opt.ans.trim())) {
+            toast.error("Complete the question text and all option fields.");
+            return;
+        }
+        const marksNum = Number(editQMarks);
+        if (!Number.isFinite(marksNum) || marksNum <= 0) {
+            toast.error("Marks must be greater than zero.");
+            return;
+        }
+
+        setEditBusy(true);
+        try {
+            const res = await fetch(`/api/questions/${editingQuestion.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    question: editQText,
+                    marks: marksNum,
+                    topic_id: editQTopicId ? Number(editQTopicId) : null,
+                    options: editQOptions.map((opt) => ({
+                        ans: opt.ans.trim(),
+                        is_correct: opt.is_correct,
+                    })),
+                }),
+            });
+
+            const updated = await res.json();
+            if (!res.ok) throw new Error(updated.message ?? "Unable to update question.");
+
+            // Update localQuestions in state
+            setLocalQuestions((prev) =>
+                prev.map((item) => (item.id === editingQuestion.id ? { ...item, ...updated } : item))
+            );
+
+            // Update questionConfigs marks if needed
+            setQuestionConfigs((prev) => ({
+                ...prev,
+                [editingQuestion.id]: {
+                    marks: marksNum,
+                    negative_marks: prev[editingQuestion.id]?.negative_marks ?? 0,
+                },
+            }));
+
+            toast.success("Question updated successfully!");
+            setIsEditModalOpen(false);
+            setEditingQuestion(null);
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Unable to update question.");
+        } finally {
+            setEditBusy(false);
         }
     }
 
@@ -1188,6 +1275,17 @@ Please generate 5 high-quality questions. Respond with the raw JSON array ONLY. 
                                                             aria-label="Move question down"
                                                         >
                                                             <ArrowDown className="h-3 w-3" />
+                                                        </Button>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => openEditQuestionModal(q)}
+                                                            className="h-7 w-7 rounded-none border-r text-muted-foreground hover:text-foreground"
+                                                            aria-label="Edit question"
+                                                            title="Edit question details"
+                                                        >
+                                                            <Edit3 className="h-3 w-3" />
                                                         </Button>
                                                         <Button
                                                             type="button"
@@ -1849,6 +1947,132 @@ Please generate 5 high-quality questions. Respond with the raw JSON array ONLY. 
                                 onCancel={() => setIsBulkModalOpen(false)}
                             />
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Question Modal */}
+            {isEditModalOpen && editingQuestion && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200"
+                    onClick={() => setIsEditModalOpen(false)}
+                >
+                    <div
+                        className="relative bg-background border rounded-xl shadow-lg w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="px-6 py-4 border-b flex items-center justify-between bg-muted/20">
+                            <div>
+                                <h3 className="text-lg font-semibold leading-none tracking-tight">Edit Question (ID: #{editingQuestion.id})</h3>
+                                <p className="text-sm text-muted-foreground mt-1.5">
+                                    Update question content, marks, topic, or options.
+                                </p>
+                            </div>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 rounded-full shrink-0"
+                                onClick={() => setIsEditModalOpen(false)}
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+
+                        <form onSubmit={handleSaveEditQuestion} className="flex flex-col flex-1 overflow-hidden">
+                            <div className="p-6 overflow-y-auto space-y-5 flex-1">
+                                <div>
+                                    <Label className="mb-2 block font-medium">Question Description</Label>
+                                    <div className="overflow-hidden rounded-lg bg-white border text-black">
+                                        <ReactQuill
+                                            theme="snow"
+                                            value={editQText}
+                                            onChange={setEditQText}
+                                            placeholder="Write your question text here..."
+                                            modules={QUILL_MODULES}
+                                            formats={QUILL_FORMATS}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="edit-q-marks">Marks</Label>
+                                        <Input
+                                            id="edit-q-marks"
+                                            type="number"
+                                            min="0.01"
+                                            step="0.01"
+                                            required
+                                            value={editQMarks}
+                                            onChange={(e) => setEditQMarks(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="edit-q-topic">Topic</Label>
+                                        <select
+                                            id="edit-q-topic"
+                                            className="border-input bg-background h-10 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                            value={editQTopicId}
+                                            onChange={(e) => setEditQTopicId(e.target.value)}
+                                        >
+                                            <option value="">No topic</option>
+                                            {topics.map((t) => (
+                                                <option key={t.id} value={t.id}>{t.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <fieldset className="space-y-3 border-t pt-4">
+                                    <legend className="mb-2 text-sm font-semibold">Answer options</legend>
+                                    <RadioGroup
+                                        value={String(editQOptions.findIndex((o) => o.is_correct))}
+                                        onValueChange={(val) =>
+                                            setEditQOptions((curr) =>
+                                                curr.map((opt, idx) => ({
+                                                    ...opt,
+                                                    is_correct: idx === Number(val),
+                                                }))
+                                            )
+                                        }
+                                        className="space-y-3"
+                                    >
+                                        {editQOptions.map((opt, index) => (
+                                            <div key={index} className="flex items-center gap-3">
+                                                <RadioGroupItem value={String(index)} aria-label={`Option ${index + 1} is correct`} />
+                                                <Input
+                                                    value={opt.ans}
+                                                    onChange={(e) =>
+                                                        setEditQOptions((curr) =>
+                                                            curr.map((item, idx) =>
+                                                                idx === index ? { ...item, ans: e.target.value } : item
+                                                            )
+                                                        )
+                                                    }
+                                                    placeholder={`Option ${index + 1}`}
+                                                    className="flex-1"
+                                                    required
+                                                />
+                                            </div>
+                                        ))}
+                                    </RadioGroup>
+                                </fieldset>
+                            </div>
+
+                            <div className="px-6 py-4 border-t bg-muted/30 flex items-center justify-end gap-3 shrink-0">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    disabled={editBusy}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button type="submit" disabled={editBusy}>
+                                    {editBusy ? "Saving changes..." : "Save Changes"}
+                                </Button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
