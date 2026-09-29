@@ -122,6 +122,15 @@ export default function StudentBatchCreator({ users, organizationId }: StudentBa
             const data = await res.json().catch(() => null);
             if (!res.ok) throw new Error(getApiError(data, res.status));
 
+            // Step 1b: Update status if inactive
+            if (status === "inactive") {
+                await fetch(`/api/backend/student-batches/${data.id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ is_active: false }),
+                }).catch(() => null);
+            }
+
             // Step 2: Assign Students (if any)
             if (selectedStudentIds.length > 0) {
                 const addRes = await fetch(`/api/backend/student-batches/${data.id}/students`, {
@@ -219,7 +228,6 @@ export default function StudentBatchCreator({ users, organizationId }: StudentBa
                                     >
                                         <option value="active">Active</option>
                                         <option value="inactive">Inactive</option>
-                                        <option value="draft">Draft</option>
                                     </select>
                                 </div>
 

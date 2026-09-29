@@ -5,6 +5,11 @@ import { getStudentBatches, getBatchStudents, type StudentBatch, type BatchStude
 import { getOrganizationUsers } from "../services/organizations";
 import type { User } from "../services/users";
 
+export const metadata = {
+  title: "Batches | Safalya",
+  description: "Organize and manage student batches and enrollments.",
+};
+
 export default async function StudentBatchesPage() {
   const cookieStore = await cookies();
   if (!cookieStore.has("access_token")) redirect("/login");
@@ -43,5 +48,6 @@ export default async function StudentBatchesPage() {
 
   return <StudentBatchManager initialBatches={batches} users={users} initialBatchStudents={batchStudentsMap} />;
 }
+
 
 

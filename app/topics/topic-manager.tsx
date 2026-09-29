@@ -143,7 +143,7 @@ export default function TopicManager({ initialTopics, userRole }: TopicManagerPr
                 : "bg-slate-50 text-slate-700 border border-slate-200 dark:bg-slate-900/30 dark:text-slate-400 dark:border-slate-800"
             }`}
           >
-            {topic.org_id === 0 ? "Global" : "Organization"}
+            {topic.org_id === 0 ? "Global" : userRole === "0" ? `Org ID: ${topic.org_id}` : "Organization"}
           </span>
         </CardHeader>
         <CardContent className="pt-2">
@@ -197,21 +197,23 @@ export default function TopicManager({ initialTopics, userRole }: TopicManagerPr
             )}
           </section>
 
-          {userRole !== "0" && (
-            <section>
-              <div className="mb-3">
-                <h2 className="text-xl font-semibold">Organization Topics</h2>
-                <p className="text-sm text-muted-foreground">Topics created for your organization.</p>
+          <section>
+            <div className="mb-3">
+              <h2 className="text-xl font-semibold">Organization Topics</h2>
+              <p className="text-sm text-muted-foreground">
+                {userRole === "0"
+                  ? "Topics created across organizations."
+                  : "Topics created for your organization."}
+              </p>
+            </div>
+            {organizationTopics.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {renderTopicCards(organizationTopics)}
               </div>
-              {organizationTopics.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {renderTopicCards(organizationTopics)}
-                </div>
-              ) : (
-                <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">No organization topics found.</p>
-              )}
-            </section>
-          )}
+            ) : (
+              <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">No organization topics found.</p>
+            )}
+          </section>
         </div>
       )}
 
