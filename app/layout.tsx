@@ -13,6 +13,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import QueryProvider from "@/app/providers/query-provider";
 import "./globals.css";
 import "react-quill-new/dist/quill.snow.css";
 
@@ -51,9 +52,10 @@ export default async function RootLayout({
       className={`${roboto.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full" suppressHydrationWarning>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
-          <TooltipProvider>
-            <Toaster position="top-right" richColors closeButton />
+        <QueryProvider>
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
+            <TooltipProvider>
+              <Toaster position="top-right" richColors closeButton />
             {isAuthenticated ? (
               <SidebarProvider>
                 <AppSidebar role={role ?? ""} userName={userName ?? "User"} organizationName={organizationName} />
@@ -139,6 +141,7 @@ export default async function RootLayout({
             )}
           </TooltipProvider>
         </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );
