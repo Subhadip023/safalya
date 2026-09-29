@@ -1144,7 +1144,7 @@ export default function AttemptRunner({
                         {effectiveViewMode === "single" && (
                             <aside data-exam-sidebar className="lg:sticky lg:top-32">
                                  {isActive && (
-                                        <div className="space-y-2 border-t pt-4">
+                                        <div className="my-2">
                                             <p className="text-center text-sm text-muted-foreground">
                                                 {answeredCount}/{attempt.questions.length} answered
                                             </p>
