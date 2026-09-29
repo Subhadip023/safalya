@@ -1210,6 +1210,13 @@ export default function AttemptRunner({
                                             </div>
                                         </div>
                                 </CardContent>
+                                {isActive && (
+                                        <div className="space-y-2 border-t pt-4">
+                                            <p className="text-center text-sm text-muted-foreground">
+                                                {answeredCount}/{attempt.questions.length} answered
+                                            </p>
+                                        </div>
+                                    )}
                             </Card>
                         </aside>
                     )}
