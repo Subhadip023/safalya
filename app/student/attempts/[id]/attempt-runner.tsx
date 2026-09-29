@@ -1143,14 +1143,21 @@ export default function AttemptRunner({
                         {/* ── Question palette / navigator (Only in single view) ── */}
                         {effectiveViewMode === "single" && (
                             <aside data-exam-sidebar className="lg:sticky lg:top-32">
-                                <Button
-                                    onClick={() => handleSubmit(false)}
-                                    disabled={submitting}
-                                    size="lg"
-                                    className="w-full shadow-md my-2"
-                                >
-                                    {submitting ? "Submitting…" : "Finish the entire test"}
-                                </Button>
+                                 {isActive && (
+                                        <div className="space-y-2 border-t pt-4">
+                                            <p className="text-center text-sm text-muted-foreground">
+                                                {answeredCount}/{attempt.questions.length} answered
+                                            </p>
+                                            <Button
+                                                onClick={() => handleSubmit(false)}
+                                                disabled={submitting}
+                                                size="lg"
+                                                className="w-full shadow-md"
+                                            >
+                                                {submitting ? "Submitting…" : "Finish the entire test"}
+                                            </Button>
+                                        </div>
+                                    )}
                                 <Card>
                                     <CardHeader className="pb-3">
                                         <CardTitle className="text-base font-semibold">Questions</CardTitle>
@@ -1202,22 +1209,6 @@ export default function AttemptRunner({
                                                 <span className="text-muted-foreground">Answered</span>
                                             </div>
                                         </div>
-
-                                    {isActive && (
-                                        <div className="space-y-2 border-t pt-4">
-                                            <p className="text-center text-sm text-muted-foreground">
-                                                {answeredCount}/{attempt.questions.length} answered
-                                            </p>
-                                            <Button
-                                                onClick={() => handleSubmit(false)}
-                                                disabled={submitting}
-                                                size="lg"
-                                                className="w-full shadow-md"
-                                            >
-                                                {submitting ? "Submitting…" : "Finish the entire test"}
-                                            </Button>
-                                        </div>
-                                    )}
                                 </CardContent>
                             </Card>
                         </aside>
