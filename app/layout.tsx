@@ -36,6 +36,8 @@ export default async function RootLayout({
   const cookieStore = await cookies();
   const isAuthenticated = cookieStore.has("access_token");
   const role = cookieStore.get("user_role")?.value;
+  const userId = cookieStore.get("user_id")?.value;
+  const organizationId = cookieStore.get("organization_id")?.value;
   const userName = cookieStore.get("user_name")?.value;
   const organizationName = cookieStore.get("organization_name")?.value;
   const headerName = role === "0" ? "Super Admin" : organizationName || userName || "Safalya";
@@ -55,7 +57,7 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-full font-sans" suppressHydrationWarning>
-        <QueryProvider>
+        <QueryProvider cacheScope={`${userId ?? "anonymous"}:${role ?? ""}:${organizationId ?? ""}`}>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
             <TooltipProvider>
               <Toaster position="top-right" richColors closeButton />

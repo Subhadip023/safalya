@@ -1,9 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getApiUrl } from "../lib/api-url";
 import { getAllTestSeries } from "../services/test-series";
-import { getAllQuestionsList } from "../services/questions";
-import { getAllTopics } from "../services/topics";
 import { getOrganization } from "../services/organizations";
 import TestSeriesManager from "./test-series-manager";
 
@@ -34,8 +31,6 @@ export default async function TestSeriesPage() {
     }
 
     const series = await fetchWithRetry(getAllTestSeries) as any[];
-    const allQuestions = await fetchWithRetry(getAllQuestionsList) as any[];
-    const topics = await fetchWithRetry(getAllTopics) as any[];
 
 
     const organizationId = Number(cookieStore.get("organization_id")?.value);
@@ -54,21 +49,11 @@ export default async function TestSeriesPage() {
         )
     );
 
-    // Filter questions by role: superadmin sees globals, admin/teacher sees available questions
-    const questions = allQuestions.filter((q) => {
-        if (role === "0") return q.is_global;
-        if (role === "1") return true;
-        return q.user_id === userId || !q.is_global;
-    });
-
-
     return (
         <main className="p-6">
             <TestSeriesManager
                 initialSeries={teacherSeries}
                 organizations={organizations}
-                questions={questions}
-                topics={topics}
                 userId={userId}
                 userRole={role}
                 userOrgId={organizationId}

@@ -1,8 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import { getTestSeries } from "../../services/test-series";
-import { getAllQuestionsList } from "../../services/questions";
-import { getAllTopics } from "../../services/topics";
+import { getQuestionsByIds } from "../../services/questions";
 import { getOrganizationUsers } from "../../services/organizations";
 import { getAllTeacherGroups } from "../../services/teacher-groups";
 import { getStudentBatches } from "../../services/student-batches";
@@ -36,10 +35,8 @@ export default async function EditTestSeriesPage({
     if (isNaN(seriesId)) notFound();
 
     // Fetch details
-    const [series, allQuestions, topics, orgUsers, teacherGroups, studentBatches] = await Promise.all([
+    const [series, orgUsers, teacherGroups, studentBatches] = await Promise.all([
         getTestSeries(seriesId).catch(() => null),
-        getAllQuestionsList().catch(() => []),
-        getAllTopics().catch(() => []),
         organizationId ? getOrganizationUsers(organizationId).catch(() => []) : Promise.resolve([]),
         getAllTeacherGroups().catch(() => []),
         getStudentBatches().catch(() => []),
@@ -57,19 +54,21 @@ export default async function EditTestSeriesPage({
 
     if (!canEdit) redirect("/test-series");
 
-    // Filter available questions to add by role:
-    const questions = allQuestions.filter((q) => {
-        if (role === "0") return q.is_global;
-        if (role === "1") return !q.is_global && q.organization_id === organizationId;
-        return q.user_id === userId;
-    });
+    const questionFilters = role === "0"
+        ? { isGlobal: true }
+        : role === "1"
+            ? { isGlobal: false, organizationId }
+            : { userId };
+    const questions = await getQuestionsByIds(
+        series.questions.map((question) => question.question_id),
+        questionFilters,
+    );
 
     return (
         <>
             <TestSeriesEditor
                 series={series}
                 availableQuestions={questions}
-                topics={topics}
                 organizationUsers={orgUsers}
                 teacherGroups={teacherGroups}
                 studentBatches={studentBatches}

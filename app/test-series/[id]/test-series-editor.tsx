@@ -14,8 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { TestSeries } from "../../services/test-series";
-import type { Question } from "../../services/questions";
-import type { Topic } from "../../services/topics";
+import type { PaginatedQuestionResponse, Question } from "../../services/questions";
+import { useTopics } from "@/lib/query/topics/use-topics";
 import type { User } from "../../services/users";
 import type { TeacherGroup } from "../../services/teacher-groups";
 import type { StudentBatch, BatchStudent } from "../../services/student-batches";
@@ -71,10 +71,40 @@ function getApiError(data: unknown, status: number): string {
     return `Server returned error status ${status}`;
 }
 
+async function fetchQuestionPage(
+    page: number,
+    search: string,
+    topicId: number | undefined,
+    userRole: string | undefined,
+    userId: number,
+    userOrgId: number | undefined,
+): Promise<PaginatedQuestionResponse> {
+    const params = new URLSearchParams({
+        page: String(page),
+        page_size: "25",
+    });
+    if (search.trim()) params.set("search", search.trim());
+    if (topicId !== undefined) params.set("topic_id", String(topicId));
+    if (userRole === "0") {
+        params.set("is_global", "true");
+    } else if (userRole === "1") {
+        params.set("is_global", "false");
+        if (userOrgId !== undefined) params.set("organization_id", String(userOrgId));
+    } else {
+        params.set("question_user_id", String(userId));
+    }
+
+    const response = await fetch(`/api/questions?${params.toString()}`, {
+        cache: "no-store",
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(getApiError(data, response.status));
+    return data as PaginatedQuestionResponse;
+}
+
 type TestSeriesEditorProps = {
     series: TestSeries;
     availableQuestions: Question[];
-    topics: Topic[];
     organizationUsers: User[];
     teacherGroups?: TeacherGroup[];
     studentBatches?: StudentBatch[];
@@ -86,7 +116,6 @@ type TestSeriesEditorProps = {
 export default function TestSeriesEditor({
     series,
     availableQuestions,
-    topics,
     organizationUsers,
     teacherGroups = [],
     studentBatches = [],
@@ -94,6 +123,7 @@ export default function TestSeriesEditor({
     userRole,
     userOrgId,
 }: TestSeriesEditorProps) {
+    const { data: topics = [] } = useTopics();
     const router = useRouter();
     const [localQuestions, setLocalQuestions] = useState<Question[]>(availableQuestions);
     const [linkedQuestionIds, setLinkedQuestionIds] = useState<number[]>(series.questions?.map(q => q.question_id) || []);
@@ -277,6 +307,11 @@ export default function TestSeriesEditor({
     // Filter controls for adding existing questions
     const [searchQuery, setSearchQuery] = useState("");
     const [topicFilter, setTopicFilter] = useState("");
+    const [searchableQuestions, setSearchableQuestions] = useState<Question[]>([]);
+    const [pickerPage, setPickerPage] = useState(0);
+    const [pickerTotalPages, setPickerTotalPages] = useState(0);
+    const [pickerLoading, setPickerLoading] = useState(false);
+    const pickerRequestRef = useRef(0);
 
     // Create question form states
     const [newQText, setNewQText] = useState("");
@@ -317,20 +352,78 @@ export default function TestSeriesEditor({
         }, 0);
     }, [linkedQuestionIds, localQuestions, questionConfigs]);
 
-    const searchableQuestions = useMemo(() => {
-        let result = localQuestions;
-        if (topicFilter) {
-            result = result.filter((q) => q.topic_id === Number(topicFilter));
-        }
-        if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase();
-            result = result.filter((q) => {
-                const plain = sanitizeHtml(q.question, { allowedTags: [] }).toLowerCase();
-                return plain.includes(query) || String(q.id).includes(query);
+    useEffect(() => {
+        if (activeTab !== "questions" || !isAddPanelOpen) return;
+
+        const requestId = ++pickerRequestRef.current;
+        const requestRef = pickerRequestRef;
+        const timer = window.setTimeout(async () => {
+            setPickerLoading(true);
+            setSearchableQuestions([]);
+            setPickerPage(0);
+            setPickerTotalPages(0);
+            try {
+                const response = await fetchQuestionPage(
+                    1,
+                    searchQuery,
+                    topicFilter ? Number(topicFilter) : undefined,
+                    userRole,
+                    userId,
+                    userOrgId,
+                );
+                if (requestId !== pickerRequestRef.current) return;
+                setSearchableQuestions(response.items);
+                setLocalQuestions((previous) => {
+                    const questionsById = new Map(previous.map((question) => [question.id, question]));
+                    response.items.forEach((question) => questionsById.set(question.id, question));
+                    return [...questionsById.values()];
+                });
+                setPickerPage(response.page);
+                setPickerTotalPages(response.total_pages);
+            } catch (error) {
+                if (requestId !== pickerRequestRef.current) return;
+                toast.error(error instanceof Error ? error.message : "Unable to load questions.");
+            } finally {
+                if (requestId === pickerRequestRef.current) setPickerLoading(false);
+            }
+        }, 250);
+
+        return () => {
+            window.clearTimeout(timer);
+            requestRef.current++;
+        };
+    }, [activeTab, isAddPanelOpen, searchQuery, topicFilter, userRole, userId, userOrgId]);
+
+    async function loadMoreQuestions() {
+        if (pickerLoading || pickerPage >= pickerTotalPages) return;
+        const requestId = ++pickerRequestRef.current;
+        setPickerLoading(true);
+        try {
+            const response = await fetchQuestionPage(
+                pickerPage + 1,
+                searchQuery,
+                topicFilter ? Number(topicFilter) : undefined,
+                userRole,
+                userId,
+                userOrgId,
+            );
+            if (requestId !== pickerRequestRef.current) return;
+            setSearchableQuestions((previous) => [...previous, ...response.items]);
+            setLocalQuestions((previous) => {
+                const questionsById = new Map(previous.map((question) => [question.id, question]));
+                response.items.forEach((question) => questionsById.set(question.id, question));
+                return [...questionsById.values()];
             });
+            setPickerPage(response.page);
+            setPickerTotalPages(response.total_pages);
+        } catch (error) {
+            if (requestId === pickerRequestRef.current) {
+                toast.error(error instanceof Error ? error.message : "Unable to load questions.");
+            }
+        } finally {
+            if (requestId === pickerRequestRef.current) setPickerLoading(false);
         }
-        return result;
-    }, [localQuestions, searchQuery, topicFilter]);
+    }
 
     // Fetch paginated students (5 per page in desc order)
     useEffect(() => {
@@ -1051,6 +1144,7 @@ Please generate 5 high-quality questions. Respond with the raw JSON array ONLY. 
                                         <Input
                                             placeholder="Search questions..."
                                             value={searchQuery}
+                                            maxLength={200}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             className="h-8 flex-1 text-xs min-w-40"
                                         />
@@ -1077,11 +1171,11 @@ Please generate 5 high-quality questions. Respond with the raw JSON array ONLY. 
                                                             const union = new Set([...prev, ...toAdd]);
                                                             return [...union];
                                                         });
-                                                        toast.success("Added all filtered questions.");
+                                                        toast.success("Added all loaded questions.");
                                                     }}
                                                     className="h-8 px-2.5 text-xs font-medium"
                                                 >
-                                                    Select all
+                                                    Select loaded
                                                 </Button>
                                                 <Button
                                                     type="button"
@@ -1091,21 +1185,21 @@ Please generate 5 high-quality questions. Respond with the raw JSON array ONLY. 
                                                         setLinkedQuestionIds((prev) =>
                                                             prev.filter((id) => !toRemove.includes(id))
                                                         );
-                                                        toast.success("Removed all filtered questions.");
+                                                        toast.success("Removed all loaded questions.");
                                                     }}
                                                     className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
                                                 >
-                                                    Clear
+                                                    Clear loaded
                                                 </Button>
                                             </div>
                                         )}
                                     </div>
 
-                                    {searchableQuestions.length === 0 ? (
+                                    {searchableQuestions.length === 0 && !pickerLoading ? (
                                         <p className="text-muted-foreground text-center text-xs py-4 border border-dashed rounded-lg">
                                             No questions found.
                                         </p>
-                                    ) : (
+                                    ) : searchableQuestions.length > 0 ? (
                                         <div className="max-h-52 overflow-y-auto border rounded-lg bg-card divide-y">
                                             {searchableQuestions.map((q) => {
                                                 const isChecked = linkedQuestionIds.includes(q.id);
@@ -1145,6 +1239,22 @@ Please generate 5 high-quality questions. Respond with the raw JSON array ONLY. 
                                                 );
                                             })}
                                         </div>
+                                    ) : null}
+                                    {pickerLoading && (
+                                        <p className="text-muted-foreground text-center text-xs py-2">
+                                            Loading questions...
+                                        </p>
+                                    )}
+                                    {pickerPage < pickerTotalPages && (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="w-full h-8 text-xs"
+                                            onClick={loadMoreQuestions}
+                                            disabled={pickerLoading}
+                                        >
+                                            Load more questions
+                                        </Button>
                                     )}
                                 </div>
                             )}
@@ -1936,7 +2046,6 @@ Please generate 5 high-quality questions. Respond with the raw JSON array ONLY. 
 
                         <div className="flex-1 overflow-y-auto p-6 bg-muted/10">
                             <AdvancedBulkUpload
-                                topics={topics}
                                 preselectedTestSeriesId={series.id}
                                 onSuccess={(newQuestions) => {
                                     setLocalQuestions((prev) => [...prev, ...newQuestions]);

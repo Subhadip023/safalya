@@ -29,11 +29,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import Loader from "@/components/loader";
 import type { Question, PaginatedQuestionResponse } from "../services/questions";
-import type { Topic } from "../services/topics";
+import { useTopics } from "@/lib/query/topics/use-topics";
 
 type QuestionsTableProps = {
     initialData: PaginatedQuestionResponse;
-    topics: Topic[];
     initialUsers: Record<number, string>;
     initialOrganizations: Record<number, string>;
     userRole: string;
@@ -41,11 +40,11 @@ type QuestionsTableProps = {
 
 export default function QuestionsTable({
     initialData,
-    topics,
     initialUsers,
     initialOrganizations,
     userRole,
 }: QuestionsTableProps) {
+    const { data: topics = [] } = useTopics();
     const [questions, setQuestions] = useState<Question[]>(initialData.items);
     const [total, setTotal] = useState(initialData.total);
     const [totalPages, setTotalPages] = useState(initialData.total_pages);
