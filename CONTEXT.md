@@ -149,7 +149,7 @@ const tests = await getStudentTests({ page: "1", limit: "10" });
 
 | Service file | Functions |
 |---|---|
-| `services/questions.ts` | `getAllQuestions`, `getAllQuestionsList`, `getQuestion`, `createQuestion`, `updateQuestion`, `deleteQuestion`, `createQuestionOption` |
+| `services/questions.ts` | `getAllQuestions`, `getQuestionsByIds`, `getQuestion`, `createQuestion`, `updateQuestion`, `deleteQuestion`, `createQuestionOption` |
 | `services/topics.ts` | `getAllTopics`, `getTopic`, `createTopic`, `updateTopic`, `deleteTopic` |
 | `services/organizations.ts` | `getAllOrganizations`, `getOrganization`, `getOrganizationUsers` |
 | `services/test-series.ts` | `getAllTestSeries`, `getTestSeries`, `updateTestSeries`, `getTestSeriesResults` |
@@ -436,7 +436,7 @@ Do **not** use raw `<div>`, `<button>`, `<input>`, `<select>`, or `<table>` elem
 | Filtering a full list client-side across pages | Use backend query params (`search`, `topic_id`) with debounce |
 | `<Loader2 className="animate-spin" />` inline | Use `<Loader size="sm" />` from `components/loader.tsx` |
 | Creating inline loading spinners per component | Use `app/loading.tsx` for page-level, `<Loader>` for inline |
-| `getAllQuestionsList()` when you only need one page | Use `getAllQuestions(page, pageSize)` instead |
+| Loading the entire question bank into a page | Use `getAllQuestions(page, pageSize, topicId, filters)` and load results on demand |
 | Adding global state without team discussion | Start with `useState` + prop drilling, escalate if needed |
 
 ---

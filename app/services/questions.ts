@@ -55,28 +55,65 @@ export type PaginatedQuestionResponse = {
     total_pages: number;
 };
 
-export async function getAllQuestions(page = 1, pageSize = 10, topicId?: number): Promise<PaginatedQuestionResponse> {
+type QuestionFilters = {
+    search?: string;
+    questionIds?: number[];
+    isGlobal?: boolean;
+    organizationId?: number;
+    userId?: number;
+};
+
+export async function getAllQuestions(
+    page = 1,
+    pageSize = 10,
+    topicId?: number,
+    filters: QuestionFilters = {},
+): Promise<PaginatedQuestionResponse> {
     const client = await createApiClient();
-    let path = `questions/?page=${page}&page_size=${pageSize}`;
+    const params = new URLSearchParams({
+        page: String(page),
+        page_size: String(pageSize),
+    });
     if (topicId !== undefined && topicId !== null) {
-        path += `&topic_id=${topicId}`;
+        params.set("topic_id", String(topicId));
     }
-    return client.get<PaginatedQuestionResponse>(path);
+    if (filters.search?.trim()) params.set("search", filters.search.trim());
+    if (filters.isGlobal !== undefined) params.set("is_global", String(filters.isGlobal));
+    if (filters.organizationId !== undefined) {
+        params.set("organization_id", String(filters.organizationId));
+    }
+    if (filters.userId !== undefined) params.set("question_user_id", String(filters.userId));
+    filters.questionIds?.forEach((id) => params.append("question_ids", String(id)));
+    return client.get<PaginatedQuestionResponse>(`questions/?${params.toString()}`);
 }
 
-export async function getAllQuestionsList(): Promise<Question[]> {
-    let page = 1;
-    let allItems: Question[] = [];
-    let totalPages = 1;
+export async function getQuestionsByIds(
+    questionIds: number[],
+    filters: Omit<QuestionFilters, "questionIds" | "search"> = {},
+): Promise<Question[]> {
+    const uniqueIds = [...new Set(questionIds)];
+    const batches: number[][] = [];
+    for (let index = 0; index < uniqueIds.length; index += 100) {
+        batches.push(uniqueIds.slice(index, index + 100));
+    }
+    const pages: PaginatedQuestionResponse[] = [];
+    let nextBatch = 0;
+    const workers = Array.from({ length: Math.min(4, batches.length) }, async () => {
+        while (nextBatch < batches.length) {
+            const batchIndex = nextBatch++;
+            pages[batchIndex] = await getAllQuestions(1, batches[batchIndex].length, undefined, {
+                ...filters,
+                questionIds: batches[batchIndex],
+            });
+        }
+    });
+    await Promise.all(workers);
 
-    do {
-        const res = await getAllQuestions(page, 100);
-        allItems = [...allItems, ...res.items];
-        totalPages = res.total_pages;
-        page++;
-    } while (page <= totalPages);
-
-    return allItems;
+    const questionsById = new Map(pages.flatMap((page) => page.items).map((question) => [question.id, question]));
+    return uniqueIds.flatMap((id) => {
+        const question = questionsById.get(id);
+        return question ? [question] : [];
+    });
 }
 
 export async function getQuestion(questionId: number): Promise<Question> {
