@@ -63,12 +63,12 @@ export async function POST(req: NextRequest) {
       .replace(/[^a-zA-Z0-9_-]/g, "_")
       .substring(0, 30);
     const uniqueName = `issue_${Date.now()}_${cleanBasename || "img"}${ext}`;
-    const targetGithubPath = `.github/issue-attachments/${uniqueName}`;
+    const targetGithubPath = `images/${uniqueName}`;
 
-    // Target repository
-    const targetRepoConfig =
-      repoType === "backend" ? process.env.GITHUB_BACKEND_REPO : process.env.GITHUB_FRONTEND_REPO;
-    const parsedRepo = parseOwnerAndRepo(targetRepoConfig);
+    // Target repository: Always upload to the dedicated attachments repository to keep project code 100% clean
+    const attachmentsRepoConfig =
+      process.env.GITHUB_ATTACHMENTS_REPO || "https://github.com/debashismidya/issue-attachments.git";
+    const parsedRepo = parseOwnerAndRepo(attachmentsRepoConfig);
 
     // Attempt 1: Upload to GitHub repository via GitHub Contents API
     if (token && parsedRepo) {

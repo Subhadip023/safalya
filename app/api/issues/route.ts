@@ -231,9 +231,13 @@ export async function POST(req: NextRequest) {
     };
     const labels = labelMap[issueType] ?? ["in-app-report"];
 
-    // Process description: If any inline base64 images exist, upload them to GitHub attachments
+    // Process description: If any inline base64 images exist, upload them to the dedicated attachments repository
+    const attachmentsRepoConfig =
+      process.env.GITHUB_ATTACHMENTS_REPO || "https://github.com/debashismidya/issue-attachments.git";
+    const parsedAttachmentsRepo = parseOwnerAndRepo(attachmentsRepoConfig);
+
     let processedDescription = rawDesc.trim();
-    if (token && parsedRepo && processedDescription.includes("data:image/")) {
+    if (token && parsedAttachmentsRepo && processedDescription.includes("data:image/")) {
       const dataUriRegex = /src=["'](data:image\/([a-zA-Z0-9+]+);base64,([^"']+))["']/g;
       const matches: { full: string; ext: string; b64: string }[] = [];
       let m: RegExpExecArray | null;
@@ -243,9 +247,9 @@ export async function POST(req: NextRequest) {
 
       for (const item of matches) {
         const uniqueName = `issue_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${item.ext}`;
-        const targetGithubPath = `.github/issue-attachments/${uniqueName}`;
+        const targetGithubPath = `images/${uniqueName}`;
         try {
-          const ghUrl = `https://api.github.com/repos/${parsedRepo.owner}/${parsedRepo.repo}/contents/${targetGithubPath}`;
+          const ghUrl = `https://api.github.com/repos/${parsedAttachmentsRepo.owner}/${parsedAttachmentsRepo.repo}/contents/${targetGithubPath}`;
           const ghRes = await fetch(ghUrl, {
             method: "PUT",
             headers: {
@@ -261,7 +265,7 @@ export async function POST(req: NextRequest) {
             }),
           });
           if (ghRes.ok) {
-            const rawUrl = `https://raw.githubusercontent.com/${parsedRepo.owner}/${parsedRepo.repo}/main/${targetGithubPath}`;
+            const rawUrl = `https://raw.githubusercontent.com/${parsedAttachmentsRepo.owner}/${parsedAttachmentsRepo.repo}/main/${targetGithubPath}`;
             processedDescription = processedDescription.replace(item.full, rawUrl);
           }
         } catch {
