@@ -34,10 +34,20 @@ type StudentBatchEditorProps = {
     users: User[];
     initialStudents: BatchStudent[];
     organizationId: number;
+    userRole?: string;
+    currentUserId?: number;
 };
 
-export default function StudentBatchEditor({ batch, users, initialStudents, organizationId }: StudentBatchEditorProps) {
+export default function StudentBatchEditor({
+    batch,
+    users,
+    initialStudents,
+    organizationId,
+    userRole,
+    currentUserId,
+}: StudentBatchEditorProps) {
     const router = useRouter();
+    const isTeacher = userRole === "2";
 
     const [name, setName] = useState(batch.name);
     const [supervisorId, setSupervisorId] = useState<number>(batch.supervisor);
@@ -54,6 +64,10 @@ export default function StudentBatchEditor({ batch, users, initialStudents, orga
 
     const eligibleSupervisors = useMemo(() => localUsers.filter((u) => u.role === 1 || u.role === 2), [localUsers]);
     const eligibleStudents = useMemo(() => localUsers.filter((u) => u.role === 3), [localUsers]);
+    const currentSupervisor = useMemo(
+        () => localUsers.find((u) => u.id === batch.supervisor),
+        [localUsers, batch.supervisor]
+    );
 
     const searchableStudents = useMemo(() => {
         if (!searchQuery.trim()) return eligibleStudents;
@@ -108,14 +122,18 @@ export default function StudentBatchEditor({ batch, users, initialStudents, orga
         setBusy(true);
         try {
             // Update Batch Details
+            const updatePayload: Record<string, any> = {
+                name: name.trim(),
+                is_active: isActive,
+            };
+            if (!isTeacher) {
+                updatePayload.supervisor = supervisorId;
+            }
+
             const res = await fetch(`/api/backend/student-batches/${batch.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: name.trim(),
-                    supervisor: supervisorId,
-                    is_active: isActive,
-                }),
+                body: JSON.stringify(updatePayload),
             });
             const data = await res.json().catch(() => null);
             if (!res.ok) throw new Error(getApiError(data, res.status));
@@ -199,22 +217,31 @@ export default function StudentBatchEditor({ batch, users, initialStudents, orga
 
                                 <div className="space-y-1.5">
                                     <Label htmlFor="b-supervisor">Batch Supervisor</Label>
-                                    <select
-                                        id="b-supervisor"
-                                        className="border-input bg-background h-10 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                                        value={supervisorId}
-                                        onChange={(e) => setSupervisorId(Number(e.target.value))}
-                                        required
-                                    >
-                                        <option value="" disabled>
-                                            Select a supervisor...
-                                        </option>
-                                        {eligibleSupervisors.map((u) => (
-                                            <option key={u.id} value={u.id}>
-                                                {u.name} ({u.email}) - {u.role === 1 ? "Admin" : "Teacher"}
+                                    {isTeacher ? (
+                                        <div className="border border-input bg-muted/50 rounded-lg px-3 py-2 text-sm text-foreground flex items-center justify-between">
+                                            <span className="font-medium">
+                                                {currentSupervisor?.name || "Batch Supervisor"} {currentSupervisor?.email ? `(${currentSupervisor.email})` : ""}
+                                            </span>
+                                            <Badge variant="outline" className="text-[10px]">Supervisor (Locked)</Badge>
+                                        </div>
+                                    ) : (
+                                        <select
+                                            id="b-supervisor"
+                                            className="border-input bg-background h-10 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                            value={supervisorId}
+                                            onChange={(e) => setSupervisorId(Number(e.target.value))}
+                                            required
+                                        >
+                                            <option value="" disabled>
+                                                Select a supervisor...
                                             </option>
-                                        ))}
-                                    </select>
+                                            {eligibleSupervisors.map((u) => (
+                                                <option key={u.id} value={u.id}>
+                                                    {u.name} ({u.email}) - {u.role === 1 ? "Admin" : "Teacher"}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
                                 </div>
 
                                 <div className="space-y-1.5">

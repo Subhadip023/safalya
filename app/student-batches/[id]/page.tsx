@@ -30,6 +30,7 @@ export default async function EditStudentBatchPage({
     if (isNaN(batchId)) notFound();
 
     const organizationId = cookieStore.get("organization_id")?.value ?? "";
+    const currentUserId = Number(cookieStore.get("user_id")?.value ?? 0);
 
     const [batch, orgUsers, batchStudents] = await Promise.all([
         getStudentBatch(batchId).catch(() => null),
@@ -41,6 +42,11 @@ export default async function EditStudentBatchPage({
 
     if (!batch) notFound();
 
+    // If teacher, they can only view/edit their own batch
+    if (role === "2" && batch.supervisor !== currentUserId) {
+        redirect("/student-batches");
+    }
+
     return (
         <main className="p-6">
             <StudentBatchEditor 
@@ -48,6 +54,8 @@ export default async function EditStudentBatchPage({
                 users={orgUsers} 
                 initialStudents={batchStudents} 
                 organizationId={Number(organizationId)} 
+                userRole={role}
+                currentUserId={currentUserId}
             />
         </main>
     );

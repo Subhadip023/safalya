@@ -33,20 +33,30 @@ import AddStudentModal from "@/components/add-student-modal";
 type StudentBatchCreatorProps = {
     users: User[];
     organizationId: number;
+    currentUserId?: number;
+    userRole?: string;
 };
 
-export default function StudentBatchCreator({ users, organizationId }: StudentBatchCreatorProps) {
+export default function StudentBatchCreator({
+    users,
+    organizationId,
+    currentUserId,
+    userRole,
+}: StudentBatchCreatorProps) {
     const router = useRouter();
+    const isTeacher = userRole === "2";
 
     const [localUsers, setLocalUsers] = useState<User[]>(users);
 
     const eligibleSupervisors = useMemo(() => localUsers.filter((u) => u.role === 1 || u.role === 2), [localUsers]);
     const eligibleStudents = useMemo(() => localUsers.filter((u) => u.role === 3), [localUsers]);
+    const currentTeacher = useMemo(() => localUsers.find((u) => u.id === currentUserId), [localUsers, currentUserId]);
 
     const [batchName, setBatchName] = useState("");
-    const [supervisorId, setSupervisorId] = useState<number | "">(
-        eligibleSupervisors.length > 0 ? eligibleSupervisors[0].id : ""
-    );
+    const [supervisorId, setSupervisorId] = useState<number | "">(() => {
+        if (isTeacher && currentUserId) return currentUserId;
+        return eligibleSupervisors.length > 0 ? eligibleSupervisors[0].id : "";
+    });
     const [status, setStatus] = useState("active");
     const [selectedStudentIds, setSelectedStudentIds] = useState<number[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
@@ -103,7 +113,8 @@ export default function StudentBatchCreator({ users, organizationId }: StudentBa
             toast.error("Batch name is required.");
             return;
         }
-        if (!supervisorId) {
+        const effectiveSupervisorId = isTeacher ? currentUserId : Number(supervisorId);
+        if (!effectiveSupervisorId) {
             toast.error("Please select a supervisor.");
             return;
         }
@@ -116,7 +127,7 @@ export default function StudentBatchCreator({ users, organizationId }: StudentBa
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     name: batchName.trim(),
-                    supervisor: Number(supervisorId),
+                    supervisor: effectiveSupervisorId,
                 }),
             });
             const data = await res.json().catch(() => null);
@@ -200,22 +211,31 @@ export default function StudentBatchCreator({ users, organizationId }: StudentBa
 
                                 <div className="space-y-1.5">
                                     <Label htmlFor="b-supervisor">Batch Supervisor</Label>
-                                    <select
-                                        id="b-supervisor"
-                                        className="border-input bg-background h-10 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                                        value={supervisorId}
-                                        onChange={(e) => setSupervisorId(Number(e.target.value))}
-                                        required
-                                    >
-                                        <option value="" disabled>
-                                            Select a supervisor...
-                                        </option>
-                                        {eligibleSupervisors.map((s) => (
-                                            <option key={s.id} value={s.id}>
-                                                {s.name} ({s.email})
+                                    {isTeacher ? (
+                                        <div className="border border-input bg-muted/50 rounded-lg px-3 py-2 text-sm text-foreground flex items-center justify-between">
+                                            <span className="font-medium">
+                                                {currentTeacher?.name || "You"} {currentTeacher?.email ? `(${currentTeacher.email})` : ""}
+                                            </span>
+                                            <Badge variant="secondary" className="text-[10px]">Supervisor (You)</Badge>
+                                        </div>
+                                    ) : (
+                                        <select
+                                            id="b-supervisor"
+                                            className="border-input bg-background h-10 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                            value={supervisorId}
+                                            onChange={(e) => setSupervisorId(Number(e.target.value))}
+                                            required
+                                        >
+                                            <option value="" disabled>
+                                                Select a supervisor...
                                             </option>
-                                        ))}
-                                    </select>
+                                            {eligibleSupervisors.map((s) => (
+                                                <option key={s.id} value={s.id}>
+                                                    {s.name} ({s.email})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
                                 </div>
 
                                 <div className="space-y-1.5">
