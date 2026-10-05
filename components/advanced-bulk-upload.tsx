@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Topic } from "@/app/services/topics";
 import { TestSeries } from "@/app/services/test-series";
+import { useTopics } from "@/lib/query/topics/use-topics";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -332,18 +333,17 @@ type Mode = "builder" | "json";
 type TestSeriesOption = "none" | "existing" | "new";
 
 export default function AdvancedBulkUpload({
-    topics = [],
     testSeries = [],
     preselectedTestSeriesId,
     onSuccess,
     onCancel,
 }: {
-    topics?: Topic[];
     testSeries?: TestSeries[];
     preselectedTestSeriesId?: number;
     onSuccess?: (newQuestions: any[], assignedSeriesId?: number) => void;
     onCancel?: () => void;
 }) {
+    const { data: topics = [] } = useTopics();
     const router = useRouter();
     const fileInputRef = useRef<HTMLInputElement>(null);
 

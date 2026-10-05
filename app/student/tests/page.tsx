@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getStudentTests } from "../../services/student";
-import { getAllTopics } from "../../services/topics";
 import { getOrganization } from "../../services/organizations";
 import StudentTests from "./student-tests";
 
@@ -47,10 +46,9 @@ export default async function Page({
 
     const params = await searchParams;
 
-    const [paginatedTests, allTopicsData] = await Promise.all([
-        getStudentTests(params).catch(() => ({ items: [], total: 0, page: 1, limit: 10, total_pages: 1 } as PaginatedTests)),
-        getAllTopics().catch(() => []),
-    ]);
+    const paginatedTests = await getStudentTests(params).catch(
+        () => ({ items: [], total: 0, page: 1, limit: 10, total_pages: 1 } as PaginatedTests),
+    );
 
     const orgIds = [...new Set(paginatedTests.items.map((t) => t.org_id).filter((id) => id > 0))];
     const orgResults = await Promise.allSettled(orgIds.map((id) => getOrganization(id)));
@@ -65,7 +63,6 @@ export default async function Page({
             <StudentTests
                 paginatedTests={paginatedTests}
                 organizations={organizations}
-                allTopicNames={allTopicsData.map((t) => t.name)}
                 initialParams={{
                     q: params.q ?? "",
                     topic: params.topic ?? "",

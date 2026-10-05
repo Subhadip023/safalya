@@ -2,7 +2,6 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getAllQuestions } from "../services/questions";
-import { getAllTopics } from "../services/topics";
 import { getOrganization } from "../services/organizations";
 import { getUser } from "../services/users";
 import { Button } from "@/components/ui/button";
@@ -15,10 +14,7 @@ export default async function QuestionsPage() {
     if (!cookieStore.has("access_token")) redirect("/login");
     if (cookieStore.get("user_role")?.value === "3") redirect("/student/tests");
 
-    const [paginated, topics] = await Promise.all([
-        getAllQuestions(1, 10),
-        getAllTopics().catch(() => []),
-    ]);
+    const paginated = await getAllQuestions(1, 10);
 
     // Resolve user/org names only for the first page
     const nonGlobalQuestions = paginated.items.filter((q) => !q.is_global);
@@ -58,7 +54,6 @@ export default async function QuestionsPage() {
 
             <QuestionsTable
                 initialData={paginated}
-                topics={topics}
                 initialUsers={users}
                 initialOrganizations={organizations}
                 userRole={cookieStore.get("user_role")?.value ?? ""}
