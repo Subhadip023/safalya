@@ -293,6 +293,75 @@ html:fullscreen [data-exam-sidebar] {
   }
 }
 
-a{
-
+/* Quill Issue Editor Styling */
+.quill-issue-editor-wrapper .ql-toolbar.ql-snow {
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background-color: var(--muted);
+  opacity: 0.85;
+  padding: 6px 10px;
 }
+
+.quill-issue-editor-wrapper .ql-container.ql-snow {
+  border: none;
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+
+.quill-issue-editor-wrapper .ql-editor {
+  min-height: 120px;
+  color: var(--foreground);
+  line-height: 1.5;
+  padding: 10px 14px;
+}
+
+.quill-issue-editor-wrapper .ql-editor.ql-blank::before {
+  color: var(--muted-foreground);
+  font-style: normal;
+  left: 14px;
+  right: 14px;
+  opacity: 0.65;
+}
+
+.quill-issue-editor-wrapper .ql-editor img {
+  max-width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  border-radius: 8px;
+  margin: 6px 0;
+  border: 1px solid var(--border);
+  display: inline-block;
+}
+
+.quill-issue-editor-wrapper .ql-editor blockquote {
+  border-left: 3px solid var(--primary);
+  padding-left: 10px;
+  color: var(--muted-foreground);
+}
+
+.quill-issue-editor-wrapper .ql-editor pre.ql-syntax {
+  background-color: var(--muted);
+  color: var(--foreground);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+/* Dark mode adjustments for Quill stroke/fill icons */
+.dark .quill-issue-editor-wrapper .ql-snow .ql-stroke {
+  stroke: #cbd5e1;
+}
+
+.dark .quill-issue-editor-wrapper .ql-snow .ql-fill {
+  fill: #cbd5e1;
+}
+
+.dark .quill-issue-editor-wrapper .ql-snow .ql-picker {
+  color: #cbd5e1;
+}
+
+.dark .quill-issue-editor-wrapper .ql-snow .ql-picker-options {
+  background-color: var(--popover);
+  border-color: var(--border);
+  color: var(--popover-foreground);
+}
+
