@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { TestSeries } from "../../services/test-series";
 import type { PaginatedQuestionResponse, Question } from "../../services/questions";
-import type { Topic } from "../../services/topics";
+import { useTopics } from "@/lib/query/topics/use-topics";
 import type { User } from "../../services/users";
 import type { TeacherGroup } from "../../services/teacher-groups";
 import type { StudentBatch, BatchStudent } from "../../services/student-batches";
@@ -105,7 +105,6 @@ async function fetchQuestionPage(
 type TestSeriesEditorProps = {
     series: TestSeries;
     availableQuestions: Question[];
-    topics: Topic[];
     organizationUsers: User[];
     teacherGroups?: TeacherGroup[];
     studentBatches?: StudentBatch[];
@@ -117,7 +116,6 @@ type TestSeriesEditorProps = {
 export default function TestSeriesEditor({
     series,
     availableQuestions,
-    topics,
     organizationUsers,
     teacherGroups = [],
     studentBatches = [],
@@ -125,6 +123,7 @@ export default function TestSeriesEditor({
     userRole,
     userOrgId,
 }: TestSeriesEditorProps) {
+    const { data: topics = [] } = useTopics();
     const router = useRouter();
     const [localQuestions, setLocalQuestions] = useState<Question[]>(availableQuestions);
     const [linkedQuestionIds, setLinkedQuestionIds] = useState<number[]>(series.questions?.map(q => q.question_id) || []);
@@ -2047,7 +2046,6 @@ Please generate 5 high-quality questions. Respond with the raw JSON array ONLY. 
 
                         <div className="flex-1 overflow-y-auto p-6 bg-muted/10">
                             <AdvancedBulkUpload
-                                topics={topics}
                                 preselectedTestSeriesId={series.id}
                                 onSuccess={(newQuestions) => {
                                     setLocalQuestions((prev) => [...prev, ...newQuestions]);

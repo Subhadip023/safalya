@@ -2,7 +2,6 @@
 
 import { QueryClient, QueryClientProvider, isServer } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { useState } from "react";
 
 function makeQueryClient() {
   return new QueryClient({
@@ -18,18 +17,28 @@ function makeQueryClient() {
 }
 
 let browserQueryClient: QueryClient | undefined = undefined;
+let browserQueryClientScope: string | undefined;
 
-function getQueryClient() {
+function getQueryClient(scope: string) {
   if (isServer) {
     return makeQueryClient();
   } else {
-    if (!browserQueryClient) browserQueryClient = makeQueryClient();
+    if (!browserQueryClient || browserQueryClientScope !== scope) {
+      browserQueryClient = makeQueryClient();
+      browserQueryClientScope = scope;
+    }
     return browserQueryClient;
   }
 }
 
-export default function QueryProvider({ children }: { children: React.ReactNode }) {
-  const queryClient = getQueryClient();
+export default function QueryProvider({
+  children,
+  cacheScope,
+}: {
+  children: React.ReactNode;
+  cacheScope: string;
+}) {
+  const queryClient = getQueryClient(cacheScope);
 
   return (
     <QueryClientProvider client={queryClient}>

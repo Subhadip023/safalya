@@ -2,7 +2,6 @@ import { cookies } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import { getTestSeries } from "../../services/test-series";
 import { getQuestionsByIds } from "../../services/questions";
-import { getAllTopics } from "../../services/topics";
 import { getOrganizationUsers } from "../../services/organizations";
 import { getAllTeacherGroups } from "../../services/teacher-groups";
 import { getStudentBatches } from "../../services/student-batches";
@@ -36,9 +35,8 @@ export default async function EditTestSeriesPage({
     if (isNaN(seriesId)) notFound();
 
     // Fetch details
-    const [series, topics, orgUsers, teacherGroups, studentBatches] = await Promise.all([
+    const [series, orgUsers, teacherGroups, studentBatches] = await Promise.all([
         getTestSeries(seriesId).catch(() => null),
-        getAllTopics().catch(() => []),
         organizationId ? getOrganizationUsers(organizationId).catch(() => []) : Promise.resolve([]),
         getAllTeacherGroups().catch(() => []),
         getStudentBatches().catch(() => []),
@@ -71,7 +69,6 @@ export default async function EditTestSeriesPage({
             <TestSeriesEditor
                 series={series}
                 availableQuestions={questions}
-                topics={topics}
                 organizationUsers={orgUsers}
                 teacherGroups={teacherGroups}
                 studentBatches={studentBatches}

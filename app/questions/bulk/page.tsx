@@ -3,7 +3,6 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import AdvancedBulkUpload from "@/components/advanced-bulk-upload";
 import { Button } from "@/components/ui/button";
-import { getAllTopics } from "../../services/topics";
 import { getAllTestSeries } from "../../services/test-series";
 
 export const metadata = {
@@ -17,10 +16,7 @@ export default async function BulkUploadPage() {
     const role = cookieStore.get("user_role")?.value;
     if (!role || !["0", "1", "2"].includes(role)) redirect("/student/tests");
 
-    const [topics, testSeries] = await Promise.all([
-        getAllTopics().catch(() => []),
-        getAllTestSeries().catch(() => []),
-    ]);
+    const testSeries = await getAllTestSeries().catch(() => []);
 
     return (
         <main className="mx-auto w-full max-w-4xl p-6">
@@ -29,7 +25,7 @@ export default async function BulkUploadPage() {
                     ← Back to questions
                 </Button>
             </div>
-            <AdvancedBulkUpload topics={topics} testSeries={testSeries} />
+            <AdvancedBulkUpload testSeries={testSeries} />
         </main>
     );
 }

@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Topic } from "../services/topics";
+import type { Topic } from "../services/topics";
+import { useTopics } from "@/lib/query/topics/use-topics";
+import { topicKeys } from "@/lib/query/topics/keys";
 
 const PRESET_COLORS = [
   { name: "Blue", hex: "#3b82f6" },
@@ -22,12 +25,12 @@ const PRESET_COLORS = [
 ];
 
 type TopicManagerProps = {
-  initialTopics: Topic[];
   userRole: string;
 };
 
-export default function TopicManager({ initialTopics, userRole }: TopicManagerProps) {
-  const [topics, setTopics] = useState<Topic[]>(initialTopics);
+export default function TopicManager({ userRole }: TopicManagerProps) {
+  const queryClient = useQueryClient();
+  const { data: topics = [] } = useTopics();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
 
@@ -71,7 +74,7 @@ export default function TopicManager({ initialTopics, userRole }: TopicManagerPr
         });
         const updated = await res.json();
         if (!res.ok) throw new Error(updated.detail ?? "Failed to update topic.");
-        setTopics((current) =>
+        queryClient.setQueryData<Topic[]>(topicKeys.all, (current = []) =>
           current.map((t) => (t.id === editingTopic.id ? updated : t))
         );
         toast.success("Topic updated successfully!");
@@ -84,7 +87,10 @@ export default function TopicManager({ initialTopics, userRole }: TopicManagerPr
         });
         const created = await res.json();
         if (!res.ok) throw new Error(created.detail ?? "Failed to create topic.");
-        setTopics((current) => [created, ...current]);
+        queryClient.setQueryData<Topic[]>(topicKeys.all, (current = []) => [
+          created,
+          ...current,
+        ]);
         toast.success("Topic created successfully!");
       }
       setIsModalOpen(false);
@@ -108,7 +114,9 @@ export default function TopicManager({ initialTopics, userRole }: TopicManagerPr
         const data = await res.json();
         throw new Error(data.detail ?? "Failed to delete topic.");
       }
-      setTopics((current) => current.filter((t) => t.id !== topicId));
+      queryClient.setQueryData<Topic[]>(topicKeys.all, (current = []) =>
+        current.filter((topic) => topic.id !== topicId)
+      );
       toast.success("Topic deleted successfully!");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to delete topic.");

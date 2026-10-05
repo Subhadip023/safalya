@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import Loader from "@/components/loader";
+import { useTopics } from "@/lib/query/topics/use-topics";
 
 function formatDuration(seconds: number) {
     const h = Math.floor(seconds / 3600);
@@ -23,7 +24,6 @@ function formatDuration(seconds: number) {
 type StudentTestsProps = {
     paginatedTests: PaginatedTests;
     organizations?: Record<number, string>;
-    allTopicNames?: string[];
     initialParams: {
         q: string;
         topic: string;
@@ -38,9 +38,9 @@ type StudentTestsProps = {
 export default function StudentTests({
     paginatedTests,
     organizations = {},
-    allTopicNames = [],
     initialParams,
 }: StudentTestsProps) {
+    const { data: topics = [] } = useTopics();
     const [busy, setBusy] = useState<number | null>(null);
     const [pendingTestId, setPendingTestId] = useState<number | null>(null);
     const [instructionsAccepted, setInstructionsAccepted] = useState(false);
@@ -72,7 +72,7 @@ export default function StudentTests({
 
     // Available topic names
     const availableTopics = useMemo(() => {
-        const set = new Set<string>(allTopicNames);
+        const set = new Set<string>(topics.map((topic) => topic.name));
         for (const t of paginatedTests.items) {
             if (t.topics) {
                 for (const tp of t.topics) {
@@ -81,7 +81,7 @@ export default function StudentTests({
             }
         }
         return Array.from(set).sort();
-    }, [paginatedTests.items, allTopicNames]);
+    }, [paginatedTests.items, topics]);
 
     // Available organization list
     const availableOrgs = useMemo(() => {
@@ -672,6 +672,5 @@ export default function StudentTests({
         </>
     );
 }
-
 
 
