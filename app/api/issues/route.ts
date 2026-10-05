@@ -254,7 +254,7 @@ export async function POST(req: NextRequest) {
               "X-GitHub-Api-Version": "2022-11-28",
               "User-Agent": "Safalya-Issue-Tracker",
               "Content-Type": "application/json",
-            },
+            }, 
             body: JSON.stringify({
               message: "Upload issue image attachment [skip ci]",
               content: item.b64,
