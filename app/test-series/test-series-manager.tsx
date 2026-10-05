@@ -35,8 +35,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import QRCodeModal from "./qr-code-modal";
 import type { TestSeries } from "../services/test-series";
-import type { Question } from "../services/questions";
-import type { Topic } from "../services/topics";
 
 import TestSeriesModal, { TestSeriesModalFormData } from "./test-series-modal";
 
@@ -94,8 +92,6 @@ export default function TestSeriesManager({
 }: {
     initialSeries: TestSeries[];
     organizations?: Record<number, string>;
-    questions?: Question[];
-    topics?: Topic[];
     userId: number;
     userRole?: string;
     userOrgId?: number;
@@ -727,5 +723,4 @@ function SeriesCard({
         </>
     );
 }
-
 
