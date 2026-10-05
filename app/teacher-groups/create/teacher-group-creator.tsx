@@ -29,18 +29,23 @@ function getApiError(data: unknown, status: number): string {
 
 type TeacherGroupCreatorProps = {
     users: User[];
+    currentUserId?: number;
+    userRole?: string;
 };
 
-export default function TeacherGroupCreator({ users }: TeacherGroupCreatorProps) {
+export default function TeacherGroupCreator({ users, currentUserId, userRole }: TeacherGroupCreatorProps) {
     const router = useRouter();
+    const isTeacher = userRole === "2";
 
     const eligibleSupervisors = useMemo(() => users.filter((u) => u.role === 1 || u.role === 2), [users]);
     const eligibleTeachers = useMemo(() => users.filter((u) => u.role === 2), [users]);
+    const currentTeacher = useMemo(() => users.find((u) => u.id === currentUserId), [users, currentUserId]);
 
     const [name, setName] = useState("");
-    const [supervisorId, setSupervisorId] = useState<number | "">(
-        eligibleSupervisors.length > 0 ? eligibleSupervisors[0].id : ""
-    );
+    const [supervisorId, setSupervisorId] = useState<number | "">(() => {
+        if (isTeacher && currentUserId) return currentUserId;
+        return eligibleSupervisors.length > 0 ? eligibleSupervisors[0].id : "";
+    });
     const [isActive, setIsActive] = useState(true);
     const [selectedTeacherIds, setSelectedTeacherIds] = useState<number[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
@@ -66,7 +71,8 @@ export default function TeacherGroupCreator({ users }: TeacherGroupCreatorProps)
             toast.error("Group name is required.");
             return;
         }
-        if (!supervisorId) {
+        const effectiveSupervisorId = isTeacher ? currentUserId : Number(supervisorId);
+        if (!effectiveSupervisorId) {
             toast.error("Please select a supervisor.");
             return;
         }
@@ -78,7 +84,7 @@ export default function TeacherGroupCreator({ users }: TeacherGroupCreatorProps)
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     name: name.trim(),
-                    supervisor: Number(supervisorId),
+                    supervisor: Number(effectiveSupervisorId),
                     teacher_ids: selectedTeacherIds,
                     is_active: isActive,
                 }),
@@ -139,22 +145,31 @@ export default function TeacherGroupCreator({ users }: TeacherGroupCreatorProps)
 
                                 <div className="space-y-1.5">
                                     <Label htmlFor="g-supervisor">Group Supervisor</Label>
-                                    <select
-                                        id="g-supervisor"
-                                        className="border-input bg-background h-10 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                                        value={supervisorId}
-                                        onChange={(e) => setSupervisorId(Number(e.target.value))}
-                                        required
-                                    >
-                                        <option value="" disabled>
-                                            Select a supervisor...
-                                        </option>
-                                        {eligibleSupervisors.map((u) => (
-                                            <option key={u.id} value={u.id}>
-                                                {u.name} ({u.email}) - {u.role === 1 ? "Admin" : "Teacher"}
+                                    {isTeacher ? (
+                                        <div className="border border-input bg-muted/50 rounded-lg px-3 py-2 text-sm text-foreground flex items-center justify-between">
+                                            <span className="font-medium">
+                                                {currentTeacher?.name || "You"} {currentTeacher?.email ? `(${currentTeacher.email})` : ""}
+                                            </span>
+                                            <Badge variant="secondary" className="text-[10px]">Supervisor (You)</Badge>
+                                        </div>
+                                    ) : (
+                                        <select
+                                            id="g-supervisor"
+                                            className="border-input bg-background h-10 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                            value={supervisorId}
+                                            onChange={(e) => setSupervisorId(Number(e.target.value))}
+                                            required
+                                        >
+                                            <option value="" disabled>
+                                                Select a supervisor...
                                             </option>
-                                        ))}
-                                    </select>
+                                            {eligibleSupervisors.map((u) => (
+                                                <option key={u.id} value={u.id}>
+                                                    {u.name} ({u.email}) - {u.role === 1 ? "Admin" : "Teacher"}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
                                 </div>
 
                                 <div className="space-y-1.5">

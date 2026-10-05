@@ -30,6 +30,7 @@ export default async function EditTeacherGroupPage({
     if (isNaN(groupId)) notFound();
 
     const organizationId = cookieStore.get("organization_id")?.value ?? "";
+    const currentUserId = Number(cookieStore.get("user_id")?.value ?? 0);
 
     const [group, orgUsers] = await Promise.all([
         getTeacherGroup(groupId).catch(() => null),
@@ -40,11 +41,21 @@ export default async function EditTeacherGroupPage({
 
     if (!group) notFound();
 
+    // If teacher, only the group supervisor is allowed to access and edit the group
+    if (role === "2" && group.supervisor !== currentUserId) {
+        redirect("/teacher-groups");
+    }
+
     const users = orgUsers.filter((u) => u.role === 1 || u.role === 2);
 
     return (
         <main className="p-6">
-            <TeacherGroupEditor group={group} users={users} />
+            <TeacherGroupEditor
+                group={group}
+                users={users}
+                userRole={role}
+                currentUserId={currentUserId}
+            />
         </main>
     );
 }

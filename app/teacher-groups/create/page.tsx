@@ -17,6 +17,7 @@ export default async function CreateTeacherGroupPage() {
     if (role === "3") redirect("/student/tests");
 
     const organizationId = cookieStore.get("organization_id")?.value ?? "";
+    const currentUserId = Number(cookieStore.get("user_id")?.value ?? 0);
 
     let users: User[] = [];
     try {
@@ -28,7 +29,11 @@ export default async function CreateTeacherGroupPage() {
 
     return (
         <main className="p-6">
-            <TeacherGroupCreator users={users} />
+            <TeacherGroupCreator 
+                users={users} 
+                currentUserId={currentUserId}
+                userRole={role}
+            />
         </main>
     );
 }

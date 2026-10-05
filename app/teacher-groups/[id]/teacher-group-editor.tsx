@@ -31,10 +31,13 @@ function getApiError(data: unknown, status: number): string {
 type TeacherGroupEditorProps = {
     group: TeacherGroup;
     users: User[];
+    userRole?: string;
+    currentUserId?: number;
 };
 
-export default function TeacherGroupEditor({ group, users }: TeacherGroupEditorProps) {
+export default function TeacherGroupEditor({ group, users, userRole, currentUserId }: TeacherGroupEditorProps) {
     const router = useRouter();
+    const isTeacher = userRole === "2";
 
     const [name, setName] = useState(group.name);
     const [supervisorId, setSupervisorId] = useState<number>(group.supervisor);
@@ -47,6 +50,7 @@ export default function TeacherGroupEditor({ group, users }: TeacherGroupEditorP
 
     const eligibleSupervisors = useMemo(() => users.filter((u) => u.role === 1 || u.role === 2), [users]);
     const eligibleTeachers = useMemo(() => users.filter((u) => u.role === 2), [users]);
+    const supervisorUser = useMemo(() => users.find((u) => u.id === supervisorId), [users, supervisorId]);
 
     const searchableTeachers = useMemo(() => {
         if (!searchQuery.trim()) return eligibleTeachers;
@@ -68,22 +72,26 @@ export default function TeacherGroupEditor({ group, users }: TeacherGroupEditorP
             toast.error("Group name is required.");
             return;
         }
-        if (!supervisorId) {
+        if (!isTeacher && !supervisorId) {
             toast.error("Please select a supervisor.");
             return;
         }
 
         setBusy(true);
         try {
+            const updatePayload: Record<string, any> = {
+                name: name.trim(),
+                teacher_ids: selectedTeacherIds,
+                is_active: isActive,
+            };
+            if (!isTeacher) {
+                updatePayload.supervisor = supervisorId;
+            }
+
             const res = await fetch(`/api/backend/teacher-groups/${group.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: name.trim(),
-                    supervisor: supervisorId,
-                    teacher_ids: selectedTeacherIds,
-                    is_active: isActive,
-                }),
+                body: JSON.stringify(updatePayload),
             });
             const data = await res.json().catch(() => null);
             if (!res.ok) throw new Error(getApiError(data, res.status));
@@ -140,22 +148,31 @@ export default function TeacherGroupEditor({ group, users }: TeacherGroupEditorP
 
                                 <div className="space-y-1.5">
                                     <Label htmlFor="g-supervisor">Group Supervisor</Label>
-                                    <select
-                                        id="g-supervisor"
-                                        className="border-input bg-background h-10 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                                        value={supervisorId}
-                                        onChange={(e) => setSupervisorId(Number(e.target.value))}
-                                        required
-                                    >
-                                        <option value="" disabled>
-                                            Select a supervisor...
-                                        </option>
-                                        {eligibleSupervisors.map((u) => (
-                                            <option key={u.id} value={u.id}>
-                                                {u.name} ({u.email}) - {u.role === 1 ? "Admin" : "Teacher"}
+                                    {isTeacher ? (
+                                        <div className="border border-input bg-muted/50 rounded-lg px-3 py-2 text-sm text-foreground flex items-center justify-between">
+                                            <span className="font-medium">
+                                                {supervisorUser?.name || "You"} {supervisorUser?.email ? `(${supervisorUser.email})` : ""}
+                                            </span>
+                                            <Badge variant="secondary" className="text-[10px]">Supervisor (Locked)</Badge>
+                                        </div>
+                                    ) : (
+                                        <select
+                                            id="g-supervisor"
+                                            className="border-input bg-background h-10 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                            value={supervisorId}
+                                            onChange={(e) => setSupervisorId(Number(e.target.value))}
+                                            required
+                                        >
+                                            <option value="" disabled>
+                                                Select a supervisor...
                                             </option>
-                                        ))}
-                                    </select>
+                                            {eligibleSupervisors.map((u) => (
+                                                <option key={u.id} value={u.id}>
+                                                    {u.name} ({u.email}) - {u.role === 1 ? "Admin" : "Teacher"}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
                                 </div>
 
                                 <div className="space-y-1.5">
