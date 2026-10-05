@@ -16,6 +16,7 @@ import {
   Settings,
   Mail,
   LogOut,
+  Bug,
 } from "lucide-react";
 
 import {
@@ -28,6 +29,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import ReportIssueTrigger from "@/components/report-issue-trigger";
 
 import logoFull from "../public/logos/safalya-logo-new-beta.png";
 import logoIcon from "../public/logos/safalya-logo-new-beta-icon.png";
@@ -52,6 +54,11 @@ export function AppSidebar({ role, userName, organizationName }: AppSidebarProps
             title: "Super Admin",
             href: "/super-admin",
             icon: LayoutDashboard,
+          },
+          {
+            title: "GitHub Issues",
+            href: "/super-admin/issues",
+            icon: Bug,
           },
           {
             title: "Questions",
@@ -227,7 +234,15 @@ export function AppSidebar({ role, userName, organizationName }: AppSidebarProps
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border p-2">
-        <SidebarMenu>
+        <SidebarMenu className="gap-1">
+          <SidebarMenuItem>
+            <ReportIssueTrigger
+              userRole={role}
+              userName={userName}
+              organizationName={organizationName}
+              variant="sidebar"
+            />
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <form action="/api/auth/logout" method="post" className="w-full">
               <SidebarMenuButton
