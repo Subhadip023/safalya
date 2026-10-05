@@ -41,8 +41,10 @@ export default async function TestSeriesPage() {
     const organizationId = Number(cookieStore.get("organization_id")?.value);
     const userId = Number(cookieStore.get("user_id")?.value);
 
-    // Filter test series for teacher role
-    const teacherSeries = role === "2" ? series.filter((s) => s.created_by === userId) : series;
+    // Keep all test series returned by backend (backend already applies role and supervisor visibility)
+    const teacherSeries = role === "2"
+        ? series.filter((s) => s.created_by === userId || s.supervisor_id === userId || Boolean(s.teacher_group_id))
+        : series;
 
     const orgIds = [...new Set(teacherSeries.map((s) => s.org_id).filter((id) => id > 0))];
     const orgResults = await Promise.allSettled(orgIds.map((id) => getOrganization(id)));

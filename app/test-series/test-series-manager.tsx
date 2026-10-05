@@ -488,7 +488,14 @@ export default function TestSeriesManager({
                         {paginatedSeries.map((s) => {
                             const canEdit =
                                 userRole === "0" ||
-                                (userOrgId !== undefined && s.org_id === userOrgId) ||
+                                (userRole === "1" && userOrgId !== undefined && s.org_id === userOrgId) ||
+                                s.created_by === userId ||
+                                s.supervisor_id === userId ||
+                                Boolean(s.teacher_group_id);
+
+                            const canDelete =
+                                userRole === "0" ||
+                                (userRole === "1" && userOrgId !== undefined && s.org_id === userOrgId) ||
                                 s.created_by === userId;
 
                             return (
@@ -497,6 +504,7 @@ export default function TestSeriesManager({
                                     s={s}
                                     origin={origin}
                                     canEdit={canEdit}
+                                    canDelete={canDelete}
                                     organizations={organizations}
                                     onDelete={handleDelete}
                                     onToggleActive={handleToggleActive}
@@ -560,6 +568,7 @@ function SeriesCard({
     s,
     origin,
     canEdit,
+    canDelete = false,
     organizations,
     onDelete,
     onToggleActive,
@@ -567,6 +576,7 @@ function SeriesCard({
     s: TestSeries;
     origin: string;
     canEdit: boolean;
+    canDelete?: boolean;
     organizations: Record<number, string>;
     onDelete: (id: number, name: string) => void;
     onToggleActive: (id: number, currentActive: boolean) => void;
@@ -692,7 +702,7 @@ function SeriesCard({
                             Edit
                         </Button>
                     )}
-                    {canEdit && (
+                    {canDelete && (
                         <Button
                             variant="outline"
                             size="icon"

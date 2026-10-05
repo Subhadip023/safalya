@@ -51,7 +51,9 @@ export default async function EditTestSeriesPage({
     const canEdit =
         (role === "0" && series.org_id === 0) ||
         (role === "1" && series.org_id === organizationId) ||
-        series.created_by === userId;
+        series.created_by === userId ||
+        series.supervisor_id === userId ||
+        Boolean(series.teacher_group_id);
 
     if (!canEdit) redirect("/test-series");
 
