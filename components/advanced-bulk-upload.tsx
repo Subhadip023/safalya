@@ -589,15 +589,10 @@ export default function AdvancedBulkUpload({
         setIsPromptModalOpen(true);
     }
 
-    function generateCustomPrompt() {
-        const matchedTopic = topics.find(
-            (t) => t.name.toLowerCase() === promptTopic.trim().toLowerCase() || String(t.id) === promptTopic.trim()
-        );
-        const matchedTopicId = matchedTopic ? matchedTopic.id : null;
-
+    function generateCustomPrompt(resolvedTopicId: number | null, resolvedTopicName: string) {
         const subjectLine = promptSubject.trim() ? `- Subject: ${promptSubject.trim()}\n` : "";
-        const topicLine = promptTopic.trim()
-            ? `- Topic: ${promptTopic.trim()}${matchedTopicId !== null ? ` (Topic ID: ${matchedTopicId})` : ""}\n`
+        const topicLine = resolvedTopicName
+            ? `- Topic: ${resolvedTopicName}${resolvedTopicId !== null ? ` (Topic ID: ${resolvedTopicId})` : ""}\n`
             : "";
         const marksLine = promptMarks.trim() ? `- Default Marks per question: ${promptMarks.trim()}\n` : "";
         const countLine = promptNumQuestions.trim() ? `- Number of questions to generate: ${promptNumQuestions.trim()}\n` : "";
@@ -605,11 +600,11 @@ export default function AdvancedBulkUpload({
         
         const detailsHeader = [subjectLine, topicLine, marksLine, countLine, addLine].filter(Boolean).join("");
 
-        const topicIdSchemaDesc = matchedTopicId !== null
-            ? `number (set to ${matchedTopicId} for topic "${matchedTopic?.name}")`
+        const topicIdSchemaDesc = resolvedTopicId !== null
+            ? `number (set to ${resolvedTopicId} for topic "${resolvedTopicName}")`
             : `number | null (the database ID of the topic, or null if not applicable)`;
 
-        const topicIdExampleValue = matchedTopicId !== null ? matchedTopicId : "null";
+        const topicIdExampleValue = resolvedTopicId !== null ? resolvedTopicId : "null";
 
         return `Generate a JSON array of multiple-choice questions for an online assessment in the exact format specified below.
 
@@ -638,11 +633,44 @@ Example Format:
   }
 ]
 
-Please generate ${promptNumQuestions.trim() || "5"} high-quality questions${promptSubject.trim() ? ` for subject "${promptSubject.trim()}"` : ""}${promptTopic.trim() ? ` under topic "${promptTopic.trim()}"${matchedTopicId !== null ? ` (topic_id: ${matchedTopicId})` : ""}` : ""}. Respond with the raw JSON array ONLY. Do not write any markdown code blocks, explanation text, or introductions.`;
+Please generate ${promptNumQuestions.trim() || "5"} high-quality questions${promptSubject.trim() ? ` for subject "${promptSubject.trim()}"` : ""}${resolvedTopicName ? ` under topic "${resolvedTopicName}"${resolvedTopicId !== null ? ` (topic_id: ${resolvedTopicId})` : ""}` : ""}. Respond with the raw JSON array ONLY. Do not write any markdown code blocks, explanation text, or introductions.`;
     }
 
-    function handleCopyCustomPrompt() {
-        const fullPrompt = generateCustomPrompt();
+    async function handleCopyCustomPrompt() {
+        let finalTopicId: number | null = null;
+        let finalTopicName = promptTopic.trim();
+
+        if (finalTopicName) {
+            const matchedTopic = topics.find(
+                (t) => t.name.toLowerCase() === finalTopicName.toLowerCase() || String(t.id) === finalTopicName
+            );
+            if (matchedTopic) {
+                finalTopicId = matchedTopic.id;
+                finalTopicName = matchedTopic.name;
+            } else {
+                try {
+                    const toastId = toast.loading("Creating custom topic...");
+                    const res = await fetch("/api/backend/topics/", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ name: finalTopicName, color: "#3b82f6", is_active: true }),
+                    });
+                    if (res.ok) {
+                        const newTopic = await res.json();
+                        finalTopicId = newTopic.id;
+                        toast.dismiss(toastId);
+                    } else {
+                        toast.dismiss(toastId);
+                        toast.error("Could not create custom topic, continuing without ID.");
+                    }
+                } catch (e) {
+                    toast.dismiss();
+                    console.error("Failed to create topic", e);
+                }
+            }
+        }
+
+        const fullPrompt = generateCustomPrompt(finalTopicId, finalTopicName);
         navigator.clipboard.writeText(fullPrompt);
         toast.success("AI Prompt template copied to clipboard! Paste it into ChatGPT.");
         setIsPromptModalOpen(false);
