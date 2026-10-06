@@ -365,3 +365,7 @@ html:fullscreen [data-exam-sidebar] {
   color: var(--popover-foreground);
 }
 
+/* Make Quill editors taller so dropdown menus (like headings) do not get clipped */
+.ql-editor {
+  min-height: 250px;
+}

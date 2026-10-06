@@ -23,9 +23,10 @@ import type { StudentBatch, BatchStudent } from "../../services/student-batches"
 const ReactQuill = dynamic(() => import("react-quill-new"), {
     ssr: false,
     loading: () => <div className="bg-muted h-32 animate-pulse rounded" />,
-});
+}) as unknown as typeof import("react-quill-new").default;
 
 import AdvancedBulkUpload from "@/components/advanced-bulk-upload";
+import { DictationButton } from "@/components/ui/dictation-button";
 
 const QUILL_MODULES = {
     toolbar: [
@@ -328,6 +329,19 @@ export default function TestSeriesEditor({
 
     // Bulk upload states
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+
+    const quillRef = useRef<any>(null);
+    const handleDictation = (text: string) => {
+        const editor = quillRef.current?.getEditor();
+        if (editor) {
+            const selection = editor.getSelection();
+            const cursorPosition = selection ? selection.index : editor.getLength() - 1;
+            editor.insertText(cursorPosition, text + " ");
+            editor.setSelection(cursorPosition + text.length + 1);
+        } else {
+            setNewQText((prev) => prev + " " + text);
+        }
+    };
 
     useEffect(() => {
         if (typeof window !== "undefined") setOrigin(window.location.origin);
@@ -1920,8 +1934,12 @@ Please generate 5 high-quality questions. Respond with the raw JSON array ONLY. 
                                 {/* Question Text */}
                                 <div>
                                     <Label className="mb-2 block font-medium">Question Description</Label>
-                                    <div className="overflow-hidden rounded-lg bg-white border text-black">
+                                    <div className="relative overflow-hidden rounded-lg bg-white border text-black">
+                                        <div className="absolute top-1.5 right-1.5 z-10">
+                                            <DictationButton onResult={handleDictation} />
+                                        </div>
                                         <ReactQuill
+                                            ref={quillRef}
                                             theme="snow"
                                             value={newQText}
                                             onChange={setNewQText}
