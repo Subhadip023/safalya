@@ -13,6 +13,34 @@ import { Label } from "@/components/ui/label";
 import { Topic } from "@/app/services/topics";
 import { TestSeries } from "@/app/services/test-series";
 import { useTopics } from "@/lib/query/topics/use-topics";
+import dynamic from "next/dynamic";
+import { DictationButton } from "@/components/ui/dictation-button";
+
+const ReactQuill = dynamic(() => import("react-quill-new"), {
+    ssr: false,
+    loading: () => <div className="bg-muted h-40 animate-pulse rounded" />,
+}) as unknown as typeof import("react-quill-new").default;
+
+const QUILL_MODULES = {
+    toolbar: [
+        [{ header: [1, 2, 3, false] }],
+        ["bold", "italic", "underline", "strike"],
+        [{ script: "sub" }, { script: "super" }],
+        [{ list: "ordered" }, { list: "bullet" }],
+        ["link", "clean"],
+    ],
+};
+
+const QUILL_FORMATS = [
+    "header",
+    "bold",
+    "italic",
+    "underline",
+    "strike",
+    "script",
+    "list",
+    "link",
+];
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -169,6 +197,20 @@ function QuestionCard({
         onChange({ ...q, [key]: value });
     }
 
+    const quillRef = useRef<any>(null);
+
+    const handleDictation = (text: string) => {
+        const editor = quillRef.current?.getEditor();
+        if (editor) {
+            const selection = editor.getSelection();
+            const cursorPosition = selection ? selection.index : editor.getLength() - 1;
+            editor.insertText(cursorPosition, text + " ");
+            editor.setSelection(cursorPosition + text.length + 1);
+        } else {
+            setField("question", q.question + " " + text);
+        }
+    };
+
     function setOptionAns(oi: number, ans: string) {
         const opts = q.options.map((o, idx) => (idx === oi ? { ...o, ans } : o));
         setField("options", opts);
@@ -221,15 +263,21 @@ function QuestionCard({
                 <CardContent className="space-y-4">
                     {/* Question text */}
                     <div className="space-y-1.5">
-                        <Label htmlFor={`q-${q.id}-text`}>Question text (HTML supported)</Label>
-                        <textarea
-                            id={`q-${q.id}-text`}
-                            rows={3}
-                            value={q.question}
-                            onChange={(e) => setField("question", e.target.value)}
-                            placeholder="<p>Enter your question here…</p>"
-                            className="border-input bg-background w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring font-mono"
-                        />
+                        <Label htmlFor={`q-${q.id}-text`}>Question</Label>
+                        <div className="relative overflow-hidden rounded-lg bg-white text-black border border-input">
+                            <div className="absolute top-1.5 right-1.5 z-10">
+                                <DictationButton onResult={handleDictation} />
+                            </div>
+                            <ReactQuill
+                                ref={quillRef}
+                                theme="snow"
+                                value={q.question}
+                                onChange={(value) => setField("question", value)}
+                                placeholder="Write your question..."
+                                modules={QUILL_MODULES}
+                                formats={QUILL_FORMATS}
+                            />
+                        </div>
                     </div>
 
                     {/* Marks + Topic + Active */}
