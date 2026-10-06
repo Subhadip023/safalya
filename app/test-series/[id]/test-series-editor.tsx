@@ -23,7 +23,7 @@ import type { StudentBatch, BatchStudent } from "../../services/student-batches"
 const ReactQuill = dynamic(() => import("react-quill-new"), {
     ssr: false,
     loading: () => <div className="bg-muted h-32 animate-pulse rounded" />,
-});
+}) as unknown as typeof import("react-quill-new").default;
 
 import AdvancedBulkUpload from "@/components/advanced-bulk-upload";
 import { DictationButton } from "@/components/ui/dictation-button";
