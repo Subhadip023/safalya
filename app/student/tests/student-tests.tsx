@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import Loader from "@/components/loader";
 import { useTopics } from "@/lib/query/topics/use-topics";
+import { parseApiDate } from "@/lib/utils";
 
 function formatDuration(seconds: number) {
     const h = Math.floor(seconds / 3600);
@@ -546,7 +547,7 @@ export default function StudentTests({
                         const existingAttempt = attemptBySeriesId.get(t.id);
                         const isInProgress = existingAttempt?.status === "in_progress" || existingAttempt?.status === 0;
                         const isSubmitted = existingAttempt?.status === "submitted" || existingAttempt?.status === 2 || existingAttempt?.status === 3;
-                        const isExpired = new Date(t.valid_until) < new Date();
+                        const isExpired = parseApiDate(t.valid_until) < new Date();
                         const orgName = t.org_id === 0 ? "Safalya" : organizations[t.org_id] ?? `Organization #${t.org_id}`;
 
                         return (
@@ -592,7 +593,7 @@ export default function StudentTests({
 
                                 <CardContent className="pl-5 space-y-3">
                                     <p className="text-muted-foreground text-sm" suppressHydrationWarning>
-                                        Available until {new Date(t.valid_until).toLocaleString()}
+                                        Available until {parseApiDate(t.valid_until).toLocaleString()}
                                     </p>
 
                                     {/* Score display for submitted attempts */}

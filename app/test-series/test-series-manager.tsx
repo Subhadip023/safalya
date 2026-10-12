@@ -35,6 +35,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import QRCodeModal from "./qr-code-modal";
+import { parseApiDate } from "@/lib/utils";
 import type { TestSeries } from "../services/test-series";
 
 import TestSeriesModal, { TestSeriesModalFormData } from "./test-series-modal";
@@ -67,7 +68,7 @@ function formatDuration(seconds: number): string {
 }
 
 function formatExpiry(isoString: string): string {
-    const d = new Date(isoString);
+    const d = parseApiDate(isoString);
     if (isNaN(d.getTime())) return "Unknown validity";
     if (d < new Date()) return "Expired";
     return `Valid until ${d.toISOString().slice(0, 10)}`;
@@ -305,7 +306,7 @@ export default function TestSeriesManager({
                         Create Test
                     </Button>
                     <StatPill label="Total Series" value={series.length} />
-                    <StatPill label="Active" value={series.filter((s) => s.is_active !== false && new Date(s.valid_until) >= new Date()).length} />
+                    <StatPill label="Active" value={series.filter((s) => s.is_active !== false && parseApiDate(s.valid_until) >= new Date()).length} />
                     <StatPill label="Inactive" value={series.filter((s) => s.is_active === false).length} />
                 </div>
             </div>
@@ -579,7 +580,7 @@ function SeriesCard({
     onToggleActive: (id: number, currentActive: boolean) => void;
 }) {
     const [isQROpen, setIsQROpen] = useState(false);
-    const expired = new Date(s.valid_until) < new Date();
+    const expired = parseApiDate(s.valid_until) < new Date();
     const orgName = s.org_id === 0 ? "Safalya" : organizations[s.org_id] ?? `Organization #${s.org_id}`;
 
     return (

@@ -16,6 +16,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { TestSeries } from "../../services/test-series";
 import type { PaginatedQuestionResponse, Question } from "../../services/questions";
 import { useTopics } from "@/lib/query/topics/use-topics";
+import { parseApiDate } from "@/lib/utils";
 import type { User } from "../../services/users";
 import type { TeacherGroup } from "../../services/teacher-groups";
 import type { StudentBatch, BatchStudent } from "../../services/student-batches";
@@ -51,7 +52,7 @@ const QUILL_FORMATS = [
 
 function formatDateTimeLocal(isoString?: string): string {
     if (!isoString) return "";
-    const date = new Date(isoString);
+    const date = parseApiDate(isoString);
     if (isNaN(date.getTime())) return "";
     const offset = date.getTimezoneOffset() * 60000;
     return new Date(date.getTime() - offset).toISOString().slice(0, 16);
@@ -690,7 +691,7 @@ export default function TestSeriesEditor({
     // Save full series
     async function handleSaveChanges(e?: FormEvent) {
         if (e) e.preventDefault();
-        const validUntilDate = new Date(validUntil);
+        const validUntilDate = parseApiDate(validUntil);
         if (Number.isNaN(validUntilDate.getTime()) || validUntilDate.getTime() <= Date.now()) {
             toast.error("Valid until must be a future date and time.");
             return;

@@ -8,11 +8,12 @@ import { Label } from "@/components/ui/label";
 import { X } from "lucide-react";
 import { useRef } from "react";
 import Loader from "@/components/loader";
+import { parseApiDate } from "@/lib/utils";
 import type { TestSeries } from "../services/test-series";
 
 function formatDateTimeLocal(isoString?: string): string {
     if (!isoString) return "";
-    const date = new Date(isoString);
+    const date = parseApiDate(isoString);
     if (isNaN(date.getTime())) return "";
     const offset = date.getTimezoneOffset() * 60000;
     return new Date(date.getTime() - offset).toISOString().slice(0, 16);
