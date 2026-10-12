@@ -71,7 +71,6 @@ export default function TestSeriesModal({
     return (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm m-0 overflow-y-auto animate-in fade-in duration-200"
-            onClick={onClose}
         >
             <div
                 className="relative bg-background border rounded-xl shadow-lg w-full max-w-lg flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200"
