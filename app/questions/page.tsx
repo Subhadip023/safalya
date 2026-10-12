@@ -5,6 +5,7 @@ import { getAllQuestions } from "../services/questions";
 import { getOrganization } from "../services/organizations";
 import { getUser } from "../services/users";
 import { Button } from "@/components/ui/button";
+import { Sparkles } from "lucide-react";
 import QuestionsTable from "./questions-table";
 
 export const metadata = { title: "All Questions | Safalya" };
@@ -54,12 +55,13 @@ export default async function QuestionsPage() {
                         View, search, and manage questions in your database.
                     </p>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" nativeButton={false} render={<Link href="/questions/bulk" />}>
-                        Bulk upload
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" nativeButton={false} render={<Link href="/questions/bulk?mode=ai" />}>
+                        <Sparkles className="mr-1.5 h-4 w-4 text-primary" />
+                        AI Upload
                     </Button>
-                    <Button nativeButton={false} render={<Link href="/questions/create" />}>
-                        Create question
+                    <Button nativeButton={false} render={<Link href="/questions/bulk?mode=builder" />}>
+                        + Add Question
                     </Button>
                 </div>
             </div>

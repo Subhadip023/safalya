@@ -10,11 +10,18 @@ export const metadata = {
     description: "Upload multiple questions at once using JSON or the interactive builder.",
 };
 
-export default async function BulkUploadPage() {
+export default async function BulkUploadPage({
+    searchParams,
+}: {
+    searchParams?: Promise<{ mode?: string }>;
+}) {
     const cookieStore = await cookies();
     if (!cookieStore.has("access_token")) redirect("/login");
     const role = cookieStore.get("user_role")?.value;
     if (!role || !["0", "1", "2"].includes(role)) redirect("/student/tests");
+
+    const params = searchParams ? await searchParams : undefined;
+    const initialMode = params?.mode === "ai" ? "ai" : "builder";
 
     const testSeries = await getAllTestSeries().catch(() => []);
 
@@ -25,7 +32,7 @@ export default async function BulkUploadPage() {
                     ← Back to questions
                 </Button>
             </div>
-            <AdvancedBulkUpload testSeries={testSeries} />
+            <AdvancedBulkUpload testSeries={testSeries} initialMode={initialMode} />
         </main>
     );
 }
