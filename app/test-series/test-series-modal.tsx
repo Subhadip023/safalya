@@ -41,7 +41,6 @@ export default function TestSeriesModal({
     onSubmit,
     busy,
 }: TestSeriesModalProps) {
-    const lastDateRef = useRef(formatDateTimeLocal(editingSeries?.valid_until));
     const isTypingRef = useRef(false);
 
     if (!isOpen) return null;
@@ -71,7 +70,7 @@ export default function TestSeriesModal({
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm m-0 overflow-y-auto animate-in fade-in duration-200"
             onClick={onClose}
         >
             <div
@@ -154,26 +153,11 @@ export default function TestSeriesModal({
                                         }, 100);
                                     }}
                                     onChange={(e) => {
-                                        let newVal = e.target.value;
-                                        if (newVal) {
-                                            const [newDate, newTime] = newVal.split("T");
-                                            const oldVal = lastDateRef.current;
-                                            const [oldDate] = oldVal ? oldVal.split("T") : ["", ""];
-                                            
-                                            // When a date is newly chosen or date changed
-                                            if (newDate && (!oldDate || oldDate !== newDate)) {
-                                                newVal = `${newDate}T23:59`;
-                                                e.target.value = newVal;
-                                            }
-
-                                            if (!isTypingRef.current && oldVal) {
-                                                const [, oldTime] = oldVal.split("T");
-                                                if (oldDate === newDate && oldTime !== newTime) {
-                                                    e.target.blur();
-                                                }
-                                            }
-                                            lastDateRef.current = newVal;
-                                        }
+                                        const el = e.target;
+                                        if (!el.value || isTypingRef.current || el.dataset.picked) return;
+                                        el.dataset.picked = "1";
+                                        el.value = `${el.value.split("T")[0]}T23:59`;
+                                        el.blur();
                                     }}
                                 />
                             </div>

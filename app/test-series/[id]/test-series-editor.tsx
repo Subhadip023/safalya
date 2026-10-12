@@ -209,7 +209,6 @@ export default function TestSeriesEditor({
     const [validUntil, setValidUntil] = useState(series.valid_until);
     
     // Auto-close heuristic states for native datetime-local
-    const lastDateRef = useRef(formatDateTimeLocal(series.valid_until));
     const isTypingRef = useRef(false);
 
     const [durationSeconds, setDurationSeconds] = useState(series.duration_seconds);
@@ -1178,22 +1177,14 @@ Please generate 5 high-quality questions. Respond with the raw JSON array ONLY. 
                                             }, 100);
                                         }}
                                         onChange={(e) => {
-                                            const newVal = e.target.value;
-                                            setValidUntil(new Date(newVal).toISOString());
-                                            
-                                            if (newVal && !isTypingRef.current) {
-                                                const oldVal = lastDateRef.current;
-                                                if (oldVal) {
-                                                    const [oldDate, oldTime] = oldVal.split("T");
-                                                    const [newDate, newTime] = newVal.split("T");
-                                                    if (oldDate === newDate && oldTime !== newTime) {
-                                                        e.target.blur();
-                                                    }
-                                                }
-                                                lastDateRef.current = newVal;
-                                            } else if (newVal) {
-                                                lastDateRef.current = newVal;
+                                            let newVal = e.target.value;
+                                            if (!newVal) return;
+                                            if (!isTypingRef.current && !e.target.dataset.picked) {
+                                                e.target.dataset.picked = "1";
+                                                newVal = `${newVal.split("T")[0]}T23:59`;
+                                                e.target.blur();
                                             }
+                                            setValidUntil(new Date(newVal).toISOString());
                                         }}
                                     />
                                 </div>
