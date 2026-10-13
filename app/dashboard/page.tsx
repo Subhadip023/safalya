@@ -330,7 +330,7 @@ export default async function DashboardPage() {
                 </Link>
 
                 <Link
-                    href="/test-series/create"
+                    href="/test-series"
                     className="flex items-center gap-2.5 p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 text-xs font-semibold text-foreground transition-all hover:border-emerald-500/40 group"
                 >
                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
