@@ -9,7 +9,22 @@ import { getOrganizationUsers } from "../services/organizations";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, GraduationCap, HelpCircle, Layers, Users, PlusCircle, ArrowRight } from "lucide-react";
+import { 
+    FileText, 
+    GraduationCap, 
+    HelpCircle, 
+    Layers, 
+    Users, 
+    PlusCircle, 
+    ArrowRight, 
+    Sparkles, 
+    Clock, 
+    Hash, 
+    BookOpen, 
+    CheckCircle2, 
+    Zap,
+    ExternalLink
+} from "lucide-react";
 
 import { getStudentTests, getAttemptHistory } from "../services/student";
 import { StudentDashboard } from "./student-dashboard";
@@ -118,133 +133,313 @@ export default async function DashboardPage() {
     const recentTestSeries = sortedTestSeriesList.slice(0, 5);
 
     return (
-        <main className="mx-auto max-w-6xl space-y-6 px-6 py-8">
-            <Card>
-                <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <CardDescription>Dashboard</CardDescription>
-                        <CardTitle className="text-3xl">Welcome, {roleName} {userName}</CardTitle>
+        <main className="mx-auto max-w-6xl space-y-6 px-6 py-8 animate-in fade-in-50 duration-200">
+            {/* ── 1. Colorful Minimalist Hero Banner ── */}
+            <Card className="border border-indigo-500/20 bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-background shadow-xs relative overflow-hidden">
+                {/* Ambient Soft Glows */}
+                <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-indigo-500/10 blur-3xl" />
+                <div className="pointer-events-none absolute -left-16 -bottom-16 h-48 w-48 rounded-full bg-purple-500/10 blur-3xl" />
+
+                <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
+                    <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="border-indigo-500/30 text-indigo-700 dark:text-indigo-300 bg-indigo-500/10 text-xs font-semibold gap-1.5 py-0.5">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                {roleName} Portal
+                            </Badge>
+                        </div>
+                        <CardTitle className="text-2xl sm:text-3xl font-bold tracking-tight">
+                            Welcome back, {userName}
+                        </CardTitle>
+                        <CardDescription className="text-xs sm:text-sm text-muted-foreground">
+                            Manage questions, assessments, student batches, and learning progress.
+                        </CardDescription>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                        <Button nativeButton={false} render={<Link href="/questions/create" />}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
+
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                            nativeButton={false}
+                            render={<Link href="/questions/bulk?mode=ai" />}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs font-medium gap-1.5 h-9 text-xs sm:text-sm"
+                        >
+                            <Sparkles className="h-4 w-4" />
+                            AI Upload
+                        </Button>
+                        <Button
+                            variant="outline"
+                            nativeButton={false}
+                            render={<Link href="/questions/create" />}
+                            className="gap-1.5 font-medium border-border/80 hover:bg-muted/60 h-9 text-xs sm:text-sm"
+                        >
+                            <PlusCircle className="h-4 w-4 text-primary" />
                             Create Question
                         </Button>
-                        <Button variant="outline" nativeButton={false} render={<Link href="/questions" />}>
-                            View Questions
+                        <Button
+                            variant="ghost"
+                            nativeButton={false}
+                            render={<Link href="/questions" />}
+                            className="text-xs sm:text-sm h-9 text-muted-foreground hover:text-foreground"
+                        >
+                            View Questions →
                         </Button>
                     </div>
                 </CardHeader>
             </Card>
 
-            {/* Metric Cards */}
+            {/* ── 2. Minimalist KPI Metric Cards (Color Accents) ── */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <Card className="transition-colors hover:bg-accent/50">
-                    <Link href="/questions">
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium">Questions</CardTitle>
-                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{totalQuestions}</div>
-                            <p className="text-xs text-muted-foreground mt-1">
-                                {isAdmin ? "Total organization questions" : "Total questions created"}
+                {/* Questions KPI (Indigo) */}
+                <Card className="transition-all hover:shadow-md hover:border-indigo-500/40 border-border/70 group">
+                    <Link href="/questions" className="block p-5">
+                        <div className="flex items-center justify-between pb-2">
+                            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                Questions
+                            </span>
+                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 group-hover:scale-105 transition-transform">
+                                <HelpCircle className="h-4 w-4" />
+                            </div>
+                        </div>
+                        <div className="text-3xl font-bold tracking-tight text-foreground">
+                            {totalQuestions}
+                        </div>
+                        <div className="flex items-center justify-between mt-1.5">
+                            <p className="text-xs text-muted-foreground">
+                                {isAdmin ? "Organization repository" : "Created questions"}
                             </p>
-                        </CardContent>
+                            <ArrowRight className="h-3 w-3 text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
                     </Link>
                 </Card>
 
-                <Card className="transition-colors hover:bg-accent/50">
-                    <Link href="/test-series">
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium">Test Series</CardTitle>
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{totalTestSeries}</div>
-                            <p className="text-xs text-muted-foreground mt-1">Total test series</p>
-                        </CardContent>
+                {/* Test Series KPI (Emerald) */}
+                <Card className="transition-all hover:shadow-md hover:border-emerald-500/40 border-border/70 group">
+                    <Link href="/test-series" className="block p-5">
+                        <div className="flex items-center justify-between pb-2">
+                            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                Test Series
+                            </span>
+                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 group-hover:scale-105 transition-transform">
+                                <FileText className="h-4 w-4" />
+                            </div>
+                        </div>
+                        <div className="text-3xl font-bold tracking-tight text-foreground">
+                            {totalTestSeries}
+                        </div>
+                        <div className="flex items-center justify-between mt-1.5">
+                            <p className="text-xs text-muted-foreground">
+                                Configured assessments
+                            </p>
+                            <ArrowRight className="h-3 w-3 text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
                     </Link>
                 </Card>
 
-                <Card className="transition-colors hover:bg-accent/50">
-                    <Link href="/student-batches">
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium">Student Batches</CardTitle>
-                            <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{totalBatches}</div>
-                            <p className="text-xs text-muted-foreground mt-1">Active student batches</p>
-                        </CardContent>
+                {/* Student Batches KPI (Amber) */}
+                <Card className="transition-all hover:shadow-md hover:border-amber-500/40 border-border/70 group">
+                    <Link href="/student-batches" className="block p-5">
+                        <div className="flex items-center justify-between pb-2">
+                            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                Student Batches
+                            </span>
+                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 group-hover:scale-105 transition-transform">
+                                <GraduationCap className="h-4 w-4" />
+                            </div>
+                        </div>
+                        <div className="text-3xl font-bold tracking-tight text-foreground">
+                            {totalBatches}
+                        </div>
+                        <div className="flex items-center justify-between mt-1.5">
+                            <p className="text-xs text-muted-foreground">
+                                Active student batches
+                            </p>
+                            <ArrowRight className="h-3 w-3 text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
                     </Link>
                 </Card>
 
+                {/* Users / Teacher Groups KPI (Sky Blue) */}
                 {isAdmin ? (
-                    <Card className="transition-colors hover:bg-accent/50">
-                        <Link href="/users">
-                            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium">Users</CardTitle>
-                                <Users className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{totalUsers}</div>
-                                <p className="text-xs text-muted-foreground mt-1">Total registered users</p>
-                            </CardContent>
+                    <Card className="transition-all hover:shadow-md hover:border-sky-500/40 border-border/70 group">
+                        <Link href="/users" className="block p-5">
+                            <div className="flex items-center justify-between pb-2">
+                                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                    Users
+                                </span>
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 group-hover:scale-105 transition-transform">
+                                    <Users className="h-4 w-4" />
+                                </div>
+                            </div>
+                            <div className="text-3xl font-bold tracking-tight text-foreground">
+                                {totalUsers}
+                            </div>
+                            <div className="flex items-center justify-between mt-1.5">
+                                <p className="text-xs text-muted-foreground">
+                                    Registered members
+                                </p>
+                                <ArrowRight className="h-3 w-3 text-sky-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
                         </Link>
                     </Card>
                 ) : (
-                    <Card className="transition-colors hover:bg-accent/50">
-                        <Link href="/teacher-groups">
-                            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium">Teacher Groups</CardTitle>
-                                <Layers className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{totalTeacherGroups}</div>
-                                <p className="text-xs text-muted-foreground mt-1">Assigned teacher groups</p>
-                            </CardContent>
+                    <Card className="transition-all hover:shadow-md hover:border-sky-500/40 border-border/70 group">
+                        <Link href="/teacher-groups" className="block p-5">
+                            <div className="flex items-center justify-between pb-2">
+                                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                    Teacher Groups
+                                </span>
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 group-hover:scale-105 transition-transform">
+                                    <Layers className="h-4 w-4" />
+                                </div>
+                            </div>
+                            <div className="text-3xl font-bold tracking-tight text-foreground">
+                                {totalTeacherGroups}
+                            </div>
+                            <div className="flex items-center justify-between mt-1.5">
+                                <p className="text-xs text-muted-foreground">
+                                    Assigned groups
+                                </p>
+                                <ArrowRight className="h-3 w-3 text-sky-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
                         </Link>
                     </Card>
                 )}
             </div>
 
-            {/* Recent Test Series section */}
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle className="text-xl">Recent Test Series</CardTitle>
-                        <CardDescription>Overview of recently configured assessment tests</CardDescription>
+            {/* ── 3. Quick Action Shortcut Pills ── */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Link
+                    href="/questions/bulk?mode=ai"
+                    className="flex items-center gap-2.5 p-3 rounded-xl border border-indigo-500/20 bg-indigo-500/5 hover:bg-indigo-500/10 text-xs font-semibold text-foreground transition-all hover:border-indigo-500/40 group"
+                >
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                        <Sparkles className="h-3.5 w-3.5" />
                     </div>
-                    <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/test-series" />}>
-                        View all <ArrowRight className="ml-1 h-4 w-4" />
+                    <span className="truncate">AI Question Upload</span>
+                    <ArrowRight className="h-3 w-3 ml-auto text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
+
+                <Link
+                    href="/questions/bulk?mode=builder"
+                    className="flex items-center gap-2.5 p-3 rounded-xl border border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 text-xs font-semibold text-foreground transition-all hover:border-blue-500/40 group"
+                >
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                        <BookOpen className="h-3.5 w-3.5" />
+                    </div>
+                    <span className="truncate">Interactive Builder</span>
+                    <ArrowRight className="h-3 w-3 ml-auto text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
+
+                <Link
+                    href="/test-series"
+                    className="flex items-center gap-2.5 p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 text-xs font-semibold text-foreground transition-all hover:border-emerald-500/40 group"
+                >
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <Zap className="h-3.5 w-3.5" />
+                    </div>
+                    <span className="truncate">New Test Series</span>
+                    <ArrowRight className="h-3 w-3 ml-auto text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
+
+                <Link
+                    href="/student-batches"
+                    className="flex items-center gap-2.5 p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 text-xs font-semibold text-foreground transition-all hover:border-amber-500/40 group"
+                >
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                        <GraduationCap className="h-3.5 w-3.5" />
+                    </div>
+                    <span className="truncate">Student Batches</span>
+                    <ArrowRight className="h-3 w-3 ml-auto text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
+            </div>
+
+            {/* ── 4. Recent Test Series Section ── */}
+            <Card className="border-border/70 shadow-xs">
+                <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/50">
+                    <div className="flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                            <FileText className="h-4 w-4" />
+                        </div>
+                        <div>
+                            <CardTitle className="text-base font-bold">Recent Test Series</CardTitle>
+                            <CardDescription className="text-xs">Overview of recently configured assessments</CardDescription>
+                        </div>
+                    </div>
+                    <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/test-series" />} className="text-xs gap-1 text-muted-foreground hover:text-foreground">
+                        View all <ArrowRight className="h-3.5 w-3.5" />
                     </Button>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-4">
                     {recentTestSeries.length === 0 ? (
-                        <p className="py-8 text-center text-sm text-muted-foreground">No test series available yet.</p>
+                        <div className="py-12 text-center text-sm text-muted-foreground space-y-2">
+                            <FileText className="h-8 w-8 mx-auto text-muted-foreground/50" />
+                            <p className="font-medium">No test series available yet.</p>
+                            <p className="text-xs">Create your first test series to start assessments.</p>
+                        </div>
                     ) : (
-                        <div className="divide-y rounded-md border">
+                        <div className="divide-y divide-border/60 rounded-xl border border-border/60 overflow-hidden">
                             {recentTestSeries.map((ts) => (
-                                <div key={ts.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 hover:bg-muted/50 transition-colors">
-                                    <div className="space-y-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-semibold text-sm">{ts.name}</span>
-                                            <Badge variant={ts.is_active ? "default" : "secondary"} className="text-xs">
-                                                {ts.is_active ? "Active" : "Inactive"}
-                                            </Badge>
-                                            <Badge variant="outline" className="text-xs capitalize">
-                                                {ts.access_type.replace("_", " ")}
-                                            </Badge>
+                                <div key={ts.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 hover:bg-muted/40 transition-colors">
+                                    <div className="space-y-1.5 min-w-0">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="font-semibold text-sm text-foreground truncate max-w-md">
+                                                {ts.name}
+                                            </span>
+                                            {ts.is_active ? (
+                                                <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 gap-1 text-[11px] font-medium py-0">
+                                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                                    Active
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant="secondary" className="text-[11px] font-medium py-0">
+                                                    Inactive
+                                                </Badge>
+                                            )}
+                                            {ts.access_type === "public" ? (
+                                                <Badge variant="outline" className="text-[11px] border-blue-500/30 text-blue-700 dark:text-blue-300 bg-blue-500/10 font-medium py-0">
+                                                    Public
+                                                </Badge>
+                                            ) : ts.access_type === "invite_only" ? (
+                                                <Badge variant="outline" className="text-[11px] border-amber-500/30 text-amber-700 dark:text-amber-300 bg-amber-500/10 font-medium py-0">
+                                                    Invite Only
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant="outline" className="text-[11px] border-border text-muted-foreground font-medium py-0">
+                                                    Private
+                                                </Badge>
+                                            )}
                                         </div>
-                                        <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
-                                            <span>Questions: {ts.questions?.length ?? 0}</span>
-                                            <span>Duration: {Math.floor(ts.duration_seconds / 60)} mins</span>
-                                            {ts.code && <span>Code: <code className="font-mono">{ts.code}</code></span>}
+                                        <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1">
+                                            <span className="inline-flex items-center gap-1">
+                                                <HelpCircle className="h-3 w-3 text-indigo-500/80" />
+                                                {ts.questions?.length ?? 0} Questions
+                                            </span>
+                                            <span>•</span>
+                                            <span className="inline-flex items-center gap-1">
+                                                <Clock className="h-3 w-3 text-amber-500/80" />
+                                                {Math.floor(ts.duration_seconds / 60)} mins
+                                            </span>
+                                            {ts.code && (
+                                                <>
+                                                    <span>•</span>
+                                                    <span className="inline-flex items-center gap-1">
+                                                        <Hash className="h-3 w-3 text-sky-500/80" />
+                                                        <code className="font-mono bg-muted px-1.5 py-0.5 rounded text-[11px] text-foreground font-semibold">
+                                                            {ts.code}
+                                                        </code>
+                                                    </span>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
-                                    <Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/test-series/${ts.id}`} />}>
-                                        View Details
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        nativeButton={false}
+                                        render={<Link href={`/test-series/${ts.id}`} />}
+                                        className="shrink-0 text-xs gap-1 hover:border-primary/40 hover:bg-primary/5 font-medium group/btn"
+                                    >
+                                        <span>View Details</span>
+                                        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover/btn:translate-x-0.5" />
                                     </Button>
                                 </div>
                             ))}
